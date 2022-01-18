@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using System.Text;
+﻿using System.Text;
 
 namespace GuacamoleSharp.Server
 {
@@ -18,8 +17,6 @@ namespace GuacamoleSharp.Server
         public int BufferSize { get; } = _bufferSize;
 
         public StringBuilder Data { get; } = new StringBuilder();
-
-        public Socket Socket { get; set; } = null!;
 
         #endregion Public Properties
     }

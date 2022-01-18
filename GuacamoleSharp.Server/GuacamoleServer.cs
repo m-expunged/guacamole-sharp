@@ -20,7 +20,7 @@ namespace GuacamoleSharp.Server
         public GuacamoleServer(ILogger<GuacamoleServer> logger, IOptions<GuacamoleOptions> options, TokenEncrypter encrypter)
         {
             _logger = logger;
-            _options = options.Value ?? throw new ArgumentException("Guacamole options could not be parsed form appsettings.", nameof(options));
+            _options = options.Value ?? throw new ArgumentException("Guacamole options could not be parsed from appsettings", nameof(options));
             _encrypter = encrypter;
         }
 

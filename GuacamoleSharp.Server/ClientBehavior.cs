@@ -1,6 +1,7 @@
 ﻿using GuacamoleSharp.Common.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using WebSocketSharp;
 using WebSocketSharp.Server;
 
 namespace GuacamoleSharp.Server
@@ -12,6 +13,7 @@ namespace GuacamoleSharp.Server
         private readonly TokenEncrypter _encrypter;
         private readonly ILogger<GuacamoleServer> _logger;
         private readonly GuacamoleOptions _options;
+        private GuacdClient _guacdClient;
 
         #endregion Private Fields
 
@@ -28,13 +30,18 @@ namespace GuacamoleSharp.Server
 
         #region Protected Methods
 
+        protected override void OnMessage(MessageEventArgs e)
+        {
+            _guacdClient.Send(e.Data);
+        }
+
         protected override void OnOpen()
         {
             var token = Context.QueryString["token"];
 
             if (token == null)
             {
-                _logger.LogWarning("No connection token was specifed for websocket connection.");
+                _logger.LogWarning("No connection token was specifed for websocket connection");
                 Context.WebSocket.Close();
             }
 
@@ -47,10 +54,11 @@ namespace GuacamoleSharp.Server
 
             AddUnencryptedConnectionOptions(connectionOptions);
 
+            _guacdClient = new GuacdClient(_logger, _options, connectionOptions, SendCallback);
+
             var guacdClientThread = new Thread(() =>
             {
-                var guacdClient = new GuacdClient(_logger, _options, connectionOptions, SendCallback);
-                guacdClient.Connect();
+                _guacdClient.Connect();
             });
 
             guacdClientThread.IsBackground = true;
