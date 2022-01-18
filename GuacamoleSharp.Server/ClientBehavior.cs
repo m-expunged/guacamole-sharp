@@ -13,7 +13,9 @@ namespace GuacamoleSharp.Server
         private readonly TokenEncrypter _encrypter;
         private readonly ILogger<GuacamoleServer> _logger;
         private readonly GuacamoleOptions _options;
-        private GuacdClient _guacdClient;
+
+        private bool _closed = false;
+        private GuacdClient _guacdClient = null!;
 
         #endregion Private Fields
 
@@ -30,9 +32,28 @@ namespace GuacamoleSharp.Server
 
         #region Protected Methods
 
+        protected override void OnClose(CloseEventArgs e)
+        {
+            if (!_guacdClient.IsClosed)
+                _guacdClient.Close();
+
+            _closed = true;
+        }
+
+        protected override void OnError(WebSocketSharp.ErrorEventArgs e)
+        {
+            _logger.LogError("Client error: {ex}", e.Exception);
+
+            if (!_guacdClient.IsClosed)
+                _guacdClient.Close();
+
+            _closed = true;
+        }
+
         protected override void OnMessage(MessageEventArgs e)
         {
-            _guacdClient.Send(e.Data);
+            if (!_guacdClient.IsClosed)
+                _guacdClient.Send(e.Data);
         }
 
         protected override void OnOpen()
@@ -53,6 +74,8 @@ namespace GuacamoleSharp.Server
             AddDefaultConnectionOptions(connectionOptions);
 
             AddUnencryptedConnectionOptions(connectionOptions);
+
+            _logger.LogDebug("Attempting connection with settings: {@settings}", connectionOptions.Settings);
 
             _guacdClient = new GuacdClient(_logger, _options, connectionOptions, SendCallback);
 
@@ -107,9 +130,12 @@ namespace GuacamoleSharp.Server
 
         private void SendCallback(string message)
         {
-            _logger.LogDebug(">>>G2W> {message}", message);
+            if (!_closed)
+            {
+                _logger.LogDebug(">>>G2W> {message}", message);
 
-            Send(message);
+                Send(message);
+            }
         }
 
         #endregion Private Methods

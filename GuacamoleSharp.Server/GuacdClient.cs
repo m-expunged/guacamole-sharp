@@ -10,21 +10,26 @@ namespace GuacamoleSharp.Server
     {
         #region Private Fields
 
+        private readonly ManualResetEvent _connectDone = new ManualResetEvent(false);
         private readonly ConnectionOptions _connectionOptions;
         private readonly ILogger<GuacamoleServer> _logger;
         private readonly GuacamoleOptions _options;
+        private readonly ManualResetEvent _receiveDone = new ManualResetEvent(false);
         private readonly Action<string> _sendCallback;
+        private readonly ManualResetEvent _sendDone = new ManualResetEvent(false);
         private readonly IConnectionDictionary<string, string> _settings;
 
         private Socket _client = null!;
-        private ManualResetEvent _connectDone = new ManualResetEvent(false);
         private bool _handshakeDone = false;
-        private bool _keepOpen = true;
-        private ManualResetEvent _receiveDone = new ManualResetEvent(false);
         private string _response = string.Empty;
-        private ManualResetEvent _sendDone = new ManualResetEvent(false);
 
         #endregion Private Fields
+
+        #region Public Properties
+
+        public bool IsClosed { get; set; } = false;
+
+        #endregion Public Properties
 
         #region Public Constructors
 
@@ -41,6 +46,11 @@ namespace GuacamoleSharp.Server
 
         #region Public Methods
 
+        public void Close()
+        {
+            IsClosed = true;
+        }
+
         public void Connect()
         {
             try
@@ -55,14 +65,14 @@ namespace GuacamoleSharp.Server
                 _logger.LogInformation("Guacd connection has opened");
                 _logger.LogInformation("Selecting connection type: {type}", _connectionOptions.Type);
 
-                Send(BuildGuacamoleProtocolCode("select", _connectionOptions.Type.ToLowerInvariant()));
+                Send(BuildGuacamoleProtocol("select", _connectionOptions.Type.ToLowerInvariant()));
 
                 Receive();
 
-                Send(BuildGuacamoleProtocolCode("size", _settings["width"], _settings["height"], _settings["dpi"]));
-                Send(BuildGuacamoleProtocolCode("audio", "audio/L16", _settings["audio"]));
-                Send(BuildGuacamoleProtocolCode("video", _settings["video"]));
-                Send(BuildGuacamoleProtocolCode("image", "image/png", "image/jpeg", "image/webp", _settings["image"]));
+                Send(BuildGuacamoleProtocol("size", _settings["width"], _settings["height"], _settings["dpi"]));
+                Send(BuildGuacamoleProtocol("audio", "audio/L16", _settings["audio"]));
+                Send(BuildGuacamoleProtocol("video", _settings["video"]));
+                Send(BuildGuacamoleProtocol("image", "image/png", "image/jpeg", "image/webp", _settings["image"]));
 
                 int delimiterIndex = _response.IndexOf(';');
                 string handshake = _response.ReadStringUntilIndex(delimiterIndex);
@@ -71,14 +81,19 @@ namespace GuacamoleSharp.Server
                 _logger.LogDebug("Server sent handshake: {handshake}", handshake);
 
                 var connectionCode = BuildHandshakeReplyAttributes(handshake);
-                Send(BuildGuacamoleProtocolCode(connectionCode));
+                Send(BuildGuacamoleProtocol(connectionCode));
 
                 _handshakeDone = true;
 
-                while (_keepOpen)
+                while (!IsClosed)
                 {
                     Receive();
                 }
+
+                _logger.LogInformation("Shutting down guacd connection");
+
+                _client.Shutdown(SocketShutdown.Both);
+                _client.Close();
             }
             catch (Exception ex)
             {
@@ -103,7 +118,7 @@ namespace GuacamoleSharp.Server
 
         #region Private Methods
 
-        private string BuildGuacamoleProtocolCode(params string?[] args)
+        private string BuildGuacamoleProtocol(params string?[] args)
         {
             List<string> parts = new();
             for (int i = 0; i < args.Length; i++)
@@ -170,7 +185,6 @@ namespace GuacamoleSharp.Server
 
                 if (!_handshakeDone)
                 {
-                    // handshake response is incomplete, wait for more
                     if (!state.Data.ToString().Contains(';'))
                     {
                         _client.BeginReceive(state.Buffer, 0, state.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
@@ -207,9 +221,12 @@ namespace GuacamoleSharp.Server
         {
             try
             {
-                _client.EndSend(result);
+                if (!IsClosed)
+                {
+                    _client.EndSend(result);
 
-                _sendDone.Set();
+                    _sendDone.Set();
+                }
             }
             catch (Exception ex)
             {
