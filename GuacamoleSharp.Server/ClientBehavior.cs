@@ -34,7 +34,7 @@ namespace GuacamoleSharp.Server
 
         protected override void OnClose(CloseEventArgs e)
         {
-            if (!_guacdClient.IsClosed)
+            if (!_guacdClient.Closed)
                 _guacdClient.Close();
 
             _closed = true;
@@ -42,9 +42,9 @@ namespace GuacamoleSharp.Server
 
         protected override void OnError(WebSocketSharp.ErrorEventArgs e)
         {
-            _logger.LogError("Client error: {ex}", e.Exception);
+            _logger.LogError("Client error: {message}", e.Message);
 
-            if (!_guacdClient.IsClosed)
+            if (!_guacdClient.Closed)
                 _guacdClient.Close();
 
             _closed = true;
@@ -52,7 +52,7 @@ namespace GuacamoleSharp.Server
 
         protected override void OnMessage(MessageEventArgs e)
         {
-            if (!_guacdClient.IsClosed)
+            if (!_guacdClient.Closed)
                 _guacdClient.Send(e.Data);
         }
 
@@ -64,9 +64,20 @@ namespace GuacamoleSharp.Server
             {
                 _logger.LogWarning("No connection token was specifed for websocket connection");
                 Context.WebSocket.Close();
+                return;
             }
 
-            string plainText = _encrypter.DecryptString(token!);
+            string plainText;
+
+            try
+            {
+                plainText = _encrypter.DecryptString(token!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error occured while parsing token: {ex}", ex);
+                return;
+            }
 
             ConnectionOptions connectionOptions = JsonSerializer.Deserialize<ConnectionOptions>(plainText)
                 ?? throw new ArgumentNullException("Could not parse connection options from token", nameof(connectionOptions));
@@ -130,7 +141,7 @@ namespace GuacamoleSharp.Server
 
         private void SendCallback(string message)
         {
-            if (!_closed)
+            if (!_guacdClient.Closed && !_closed)
             {
                 _logger.LogDebug(">>>G2W> {message}", message);
 

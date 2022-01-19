@@ -1,4 +1,6 @@
-﻿namespace GuacamoleSharp.Common.Models
+﻿#nullable disable
+
+namespace GuacamoleSharp.Common.Models
 {
     public interface IConnectionDictionary<TKey, TValue> where TValue : class
     {
@@ -17,8 +19,7 @@
         {
             get
             {
-                TValue value;
-                this.TryGetValue(key, out value);
+                this.TryGetValue(key, out TValue value);
                 return value;
             }
         }

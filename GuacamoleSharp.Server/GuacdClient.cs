@@ -8,15 +8,21 @@ namespace GuacamoleSharp.Server
 {
     internal class GuacdClient
     {
+        #region Reset Events
+
+        private readonly ManualResetEvent _closeReady = new ManualResetEvent(false);
+        private readonly ManualResetEvent _connectDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent _receiveDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent _sendDone = new ManualResetEvent(false);
+
+        #endregion Reset Events
+
         #region Private Fields
 
-        private readonly ManualResetEvent _connectDone = new ManualResetEvent(false);
         private readonly ConnectionOptions _connectionOptions;
         private readonly ILogger<GuacamoleServer> _logger;
         private readonly GuacamoleOptions _options;
-        private readonly ManualResetEvent _receiveDone = new ManualResetEvent(false);
         private readonly Action<string> _sendCallback;
-        private readonly ManualResetEvent _sendDone = new ManualResetEvent(false);
         private readonly IConnectionDictionary<string, string> _settings;
 
         private Socket _client = null!;
@@ -27,7 +33,7 @@ namespace GuacamoleSharp.Server
 
         #region Public Properties
 
-        public bool IsClosed { get; set; } = false;
+        public bool Closed { get; private set; } = false;
 
         #endregion Public Properties
 
@@ -48,7 +54,14 @@ namespace GuacamoleSharp.Server
 
         public void Close()
         {
-            IsClosed = true;
+            Closed = true;
+
+            _logger.LogInformation("Shutting down guacd connection");
+
+            _closeReady.WaitOne();
+
+            _client.Shutdown(SocketShutdown.Both);
+            _client.Close();
         }
 
         public void Connect()
@@ -80,20 +93,17 @@ namespace GuacamoleSharp.Server
 
                 _logger.LogDebug("Server sent handshake: {handshake}", handshake);
 
-                var connectionCode = BuildHandshakeReplyAttributes(handshake);
-                Send(BuildGuacamoleProtocol(connectionCode));
+                var handshakeReply = BuildHandshakeReply(handshake);
+                Send(BuildGuacamoleProtocol(handshakeReply));
 
                 _handshakeDone = true;
 
-                while (!IsClosed)
+                while (!Closed)
                 {
                     Receive();
                 }
 
-                _logger.LogInformation("Shutting down guacd connection");
-
-                _client.Shutdown(SocketShutdown.Both);
-                _client.Close();
+                _closeReady.Set();
             }
             catch (Exception ex)
             {
@@ -130,7 +140,7 @@ namespace GuacamoleSharp.Server
             return string.Join(',', parts) + ";";
         }
 
-        private string?[] BuildHandshakeReplyAttributes(string handshake)
+        private string?[] BuildHandshakeReply(string handshake)
         {
             var handshakeAttributes = handshake.Split(',');
 
@@ -221,7 +231,7 @@ namespace GuacamoleSharp.Server
         {
             try
             {
-                if (!IsClosed)
+                if (!Closed)
                 {
                     _client.EndSend(result);
 
