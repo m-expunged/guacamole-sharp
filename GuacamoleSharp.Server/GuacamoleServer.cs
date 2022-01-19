@@ -30,13 +30,11 @@ namespace GuacamoleSharp.Server
 
         public void Start()
         {
-            string url = $"ws://localhost:{_options.WebSocket.Port}";
-
-            var wssr = new WebSocketServer(url);
+            var wssr = new WebSocketServer(_options.WebSocket.Port);
             wssr.AddWebSocketService<ClientBehavior>("/", () => new ClientBehavior(_logger, _options, _encrypter));
             wssr.Start();
 
-            _logger.LogInformation("WebSocket server listening on: {url}", url);
+            _logger.LogInformation("WebSocket server listening on: {url}", $"ws://{wssr.Address}:{wssr.Port}{wssr.WebSocketServices.Paths.FirstOrDefault()}");
         }
 
         #endregion Public Methods
