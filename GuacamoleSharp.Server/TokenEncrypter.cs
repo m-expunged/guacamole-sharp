@@ -1,6 +1,4 @@
-﻿using GuacamoleSharp.Common.Models;
-using Microsoft.Extensions.Options;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 namespace GuacamoleSharp.Server
@@ -9,23 +7,13 @@ namespace GuacamoleSharp.Server
     {
         #region Public Fields
 
-        private readonly string _password;
-        private readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
+        private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
         #endregion Public Fields
 
-        #region Public Constructors
-
-        public TokenEncrypter(IOptions<GuacamoleOptions> options)
-        {
-            _password = options.Value.Key ?? throw new ArgumentException("GuacamoleOptions is missing a cipher key", nameof(options));
-        }
-
-        #endregion Public Constructors
-
         #region Public Methods
 
-        public string DecryptString(string cipherText)
+        public static string DecryptString(string password, string cipherText)
         {
             if (string.IsNullOrWhiteSpace(cipherText))
                 throw new ArgumentNullException(nameof(cipherText));
@@ -41,7 +29,7 @@ namespace GuacamoleSharp.Server
             }
 
             byte[] cipherBytes = Convert.FromBase64String(base64Text);
-            byte[] key = GenerateKey(_password);
+            byte[] key = GenerateKey(password);
             byte[] iv = cipherBytes.Take(16).ToArray();
 
             using (var aes = Aes.Create())
@@ -64,7 +52,7 @@ namespace GuacamoleSharp.Server
             }
         }
 
-        public string EncryptString(string password, string plainText)
+        public static string EncryptString(string password, string plainText)
         {
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentNullException(nameof(password));
@@ -109,7 +97,7 @@ namespace GuacamoleSharp.Server
             return base64result.TrimEnd('=').Replace('+', '-').Replace('/', '_');
         }
 
-        private byte[] GenerateKey(string password)
+        private static byte[] GenerateKey(string password)
         {
             byte[] keyBytes = Encoding.UTF8.GetBytes(password);
             using var md5 = MD5.Create();

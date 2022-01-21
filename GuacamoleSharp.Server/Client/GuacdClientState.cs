@@ -1,6 +1,7 @@
-﻿using System.Text;
+﻿using System.Net.Sockets;
+using System.Text;
 
-namespace GuacamoleSharp.Server
+namespace GuacamoleSharp.Server.Client
 {
     internal class GuacdClientState
     {
@@ -11,6 +12,8 @@ namespace GuacamoleSharp.Server
         #endregion Private Fields
 
         #region Public Properties
+
+        public Socket workSocket = null!;
 
         public byte[] Buffer { get; } = new byte[_bufferSize];
 

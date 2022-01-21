@@ -1,4 +1,4 @@
-﻿namespace GuacamoleSharp.Server
+﻿namespace GuacamoleSharp.Server.Client
 {
     internal static class StringExtensions
     {

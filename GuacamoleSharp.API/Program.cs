@@ -4,11 +4,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.ConfigureSerilog();
+builder.ConfigureServices();
 
 builder.ConfigureCors();
 
-builder.ConfigureGuacamole();
+builder.ConfigureServices();
 
 builder.Services.AddControllers();
 
