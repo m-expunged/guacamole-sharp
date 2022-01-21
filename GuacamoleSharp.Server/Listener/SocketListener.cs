@@ -15,7 +15,9 @@ namespace GuacamoleSharp.Server.Listener
         #region Private Fields
 
         private static readonly ILogger _logger = Log.ForContext(typeof(SocketListener));
-        private static ManualResetEvent _allDone = new(false);
+        private static byte[] _buffer = new byte[1024];
+        private static Dictionary<int, Socket> _clients = new();
+        private static Socket _listener = null!;
         private static GuacamoleOptions _options = null!;
         private static Regex _rx = new Regex(@"GET...(.*?)HTTP", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -27,51 +29,15 @@ namespace GuacamoleSharp.Server.Listener
         {
             _options = options;
 
-            var thread = new Thread(() =>
-            {
-                IPHostEntry ipHostEntry = Dns.GetHostEntry(Dns.GetHostName());
-                IPAddress? ipAddress;
+            IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, port);
 
-                if (hostname == null)
-                {
-                    ipAddress = ipHostEntry.AddressList.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
-                }
-                else
-                {
-                    ipAddress = IPAddress.Parse(hostname);
-                }
+            _listener = new Socket(endpoint.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _listener.Bind(endpoint);
+            _listener.Listen(1);
 
-                if (ipAddress == null)
-                    throw new ArgumentNullException(nameof(ipAddress), $"No IP Adress of type {AddressFamily.InterNetwork} was found");
+            _logger.Information("Socket listening on: {ipEndPoint}", endpoint);
 
-                IPEndPoint endpoint = new IPEndPoint(ipAddress, port);
-                Socket listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-                _logger.Information("Socket listening on: {ipEndPoint}", endpoint);
-
-                try
-                {
-                    listener.Bind(endpoint);
-                    listener.Listen(100);
-
-                    while (true)
-                    {
-                        _allDone.Reset();
-
-                        listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
-
-                        _allDone.WaitOne();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error("Error while creating connection: {ex}", ex);
-                }
-            });
-
-            thread.IsBackground = true;
-
-            thread.Start();
+            _listener.BeginAccept(new AsyncCallback(AcceptCallback), null);
         }
 
         #endregion Public Methods
@@ -84,15 +50,10 @@ namespace GuacamoleSharp.Server.Listener
 
         private static void AcceptCallback(IAsyncResult result)
         {
-            _allDone.Set();
+            Socket client = _listener.EndAccept(result);
+            _clients.Add(_clients.Count + 1, client);
 
-            Socket listener = (Socket)result.AsyncState!;
-            Socket handler = listener.EndAccept(result);
-
-            SocketListenerState state = new SocketListenerState();
-
-            state.WorkSocket = handler;
-            handler.BeginReceive(state.Buffer, 0, state.BufferSize, 0, new AsyncCallback(ConnectCallback), state);
+            _listener.BeginAccept(new AsyncCallback(AcceptCallback), null);
         }
 
         private static void AddDefaultConnectionOptions(ConnectionOptions connectionOptions)
