@@ -52,7 +52,7 @@ namespace GuacamoleSharp.API.Extensions
 
         public static void WarmUpServices(this WebApplication app)
         {
-            app.Services.GetRequiredService<GuacamoleServer>().Start();
+            app.Services.GetRequiredService<GSServer>().Start();
         }
 
         #endregion Public Methods

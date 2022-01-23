@@ -1,4 +1,4 @@
-﻿using GuacamoleSharp.Common.Models;
+﻿using GuacamoleSharp.Common.Settings;
 using GuacamoleSharp.Server;
 using Serilog;
 
@@ -19,14 +19,7 @@ namespace GuacamoleSharp.API.Extensions
             });
         }
 
-        public static void ConfigureGuacamole(this WebApplicationBuilder builder)
-        {
-            builder.Services.Configure<GuacamoleOptions>(options => builder.Configuration.GetSection(nameof(GuacamoleOptions)).Bind(options));
-            builder.Services.AddSingleton<TokenEncrypter>();
-            builder.Services.AddSingleton<GuacamoleServer>();
-        }
-
-        public static void ConfigureSerilog(this WebApplicationBuilder builder)
+        public static void ConfigureServices(this WebApplicationBuilder builder)
         {
             builder.Host.UseSerilog((context, services, configuration) =>
             {
@@ -34,6 +27,9 @@ namespace GuacamoleSharp.API.Extensions
                     .ReadFrom.Configuration(context.Configuration)
                     .ReadFrom.Services(services);
             });
+
+            builder.Services.Configure<GSSettings>(options => builder.Configuration.GetSection(nameof(GSSettings)).Bind(options));
+            builder.Services.AddSingleton<GSServer>();
         }
 
         #endregion Public Methods
