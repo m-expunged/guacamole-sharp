@@ -1,4 +1,4 @@
-﻿using GuacamoleSharp.Common.Models;
+﻿using GuacamoleSharp.Common.Settings;
 using GuacamoleSharp.Server;
 using Serilog;
 
@@ -28,8 +28,8 @@ namespace GuacamoleSharp.API.Extensions
                     .ReadFrom.Services(services);
             });
 
-            builder.Services.Configure<GuacamoleOptions>(options => builder.Configuration.GetSection(nameof(GuacamoleOptions)).Bind(options));
-            builder.Services.AddSingleton<GuacamoleServer>();
+            builder.Services.Configure<GSSettings>(options => builder.Configuration.GetSection(nameof(GSSettings)).Bind(options));
+            builder.Services.AddSingleton<GSServer>();
         }
 
         #endregion Public Methods

@@ -5,13 +5,13 @@ namespace GuacamoleSharp.API.Extensions
 {
     public static class ProblemDetailsExtensions
     {
-        #region Public Constructors
+        #region Public Methods
 
         public static string ToJson(this ProblemDetails problem)
         {
             return JsonSerializer.Serialize(problem);
         }
 
-        #endregion Public Constructors
+        #endregion Public Methods
     }
 }
