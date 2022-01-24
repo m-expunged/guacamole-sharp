@@ -58,7 +58,7 @@ And a connection object in the request body:
   },
   "type": "ssh"
 }
-  ```
+```
 
 Curl example:
 
