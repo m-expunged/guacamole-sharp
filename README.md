@@ -63,7 +63,6 @@ The request requires two things:
 Curl example:
 
 ```
-
 curl -X 'POST' \
  'http://localhost:5072/api/Token/MySuperSecretCipherKey' \
  -H 'accept: text/plain' \
@@ -75,7 +74,6 @@ curl -X 'POST' \
 },
 "type": "ssh"
 }'
-
 ```
 
 If you start the application via Visual Studio in Debug mode, you can use Swagger to easily make the request.
