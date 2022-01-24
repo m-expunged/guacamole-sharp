@@ -44,21 +44,21 @@ Sending a POST request to 'HOSTNAME:PORT/api/token/TOKEN_ENCRYPTION_KEY' will re
 
 The request requires two things:
 
-    The token encryption key defined in appsettings.json/Dockerfile inside the url:
+The token encryption key defined in appsettings.json/Dockerfile inside the url:
 
-        .../api/token/MySuperSecretCipherKey
+    .../api/token/MySuperSecretCipherKey
 
-    And a connection object in the request body:
+And a connection object in the request body:
 
-        ````json
-        {
-          "settings": {
-            "hostname": "127.0.0.1",
-            "port": "22"
-          },
-          "type": "ssh"
-        }
-          ```
+    ````json
+    {
+      "settings": {
+        "hostname": "127.0.0.1",
+        "port": "22"
+      },
+      "type": "ssh"
+    }
+      ```
 
 Curl example:
 
