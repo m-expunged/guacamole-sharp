@@ -63,7 +63,7 @@ namespace GuacamoleSharp.Server
 
             _logger.Debug("[Connection {Id}] <<<W2G< {Message}", state.ConnectionId, message);
 
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            byte[] data = Encoding.UTF8.GetBytes(message);
             state.GuacdSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
 
             _sendDone.WaitOne();
@@ -81,7 +81,7 @@ namespace GuacamoleSharp.Server
             _logger.Information("[Connection {Id}] Socket connected to {Endpoint}", state.ConnectionId, state.GuacdSocket.RemoteEndPoint?.ToString());
             _logger.Information("Selecting connection type: {type}", state.Connection.Type);
 
-            Send(state, Helpers.BuildGuacamoleProtocol("select", state.Connection.Type.ToLowerInvariant()));
+            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("select", state.Connection.Type.ToLowerInvariant()));
 
             state.GuacdSocket.BeginReceive(state.GuacdBuffer, 0, state.GuacdBuffer.Length, SocketFlags.None, new AsyncCallback(HandshakeCallback), state);
         }
@@ -104,7 +104,7 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            state.GuacdResponseOverflowBuffer.Append(Encoding.ASCII.GetString(state.GuacdBuffer[0..receivedLength]));
+            state.GuacdResponseOverflowBuffer.Append(Encoding.UTF8.GetString(state.GuacdBuffer[0..receivedLength]));
             string reponse = state.GuacdResponseOverflowBuffer.ToString();
 
             if (!reponse.Contains(';'))
@@ -113,18 +113,18 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            (string handshake, int delimiterIndex) = Helpers.ReadResponseUntilDelimiter(reponse);
+            (string handshake, int delimiterIndex) = GuacamoleProtocolHelpers.ReadResponseUntilDelimiter(reponse);
             state.GuacdResponseOverflowBuffer.Remove(0, delimiterIndex);
-            var handshakeReply = Helpers.BuildHandshakeReply(state.Connection.Settings, handshake);
+            var handshakeReply = GuacamoleProtocolHelpers.BuildHandshakeReply(state.Connection.Settings, handshake);
 
-            Send(state, Helpers.BuildGuacamoleProtocol("size", state.Connection.Settings["width"], state.Connection.Settings["height"], state.Connection.Settings["dpi"]));
-            Send(state, Helpers.BuildGuacamoleProtocol("audio", "audio/L16", state.Connection.Settings["audio"]));
-            Send(state, Helpers.BuildGuacamoleProtocol("video", state.Connection.Settings["video"]));
-            Send(state, Helpers.BuildGuacamoleProtocol("image", "image/png", "image/jpeg", "image/webp", state.Connection.Settings["image"]));
+            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("size", state.Connection.Settings["width"], state.Connection.Settings["height"], state.Connection.Settings["dpi"]));
+            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("audio", "audio/L16", state.Connection.Settings["audio"]));
+            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("video", state.Connection.Settings["video"]));
+            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("image", "image/png", "image/jpeg", "image/webp", state.Connection.Settings["image"]));
 
             _logger.Debug("Server sent handshake: {handshake}", handshake);
 
-            Send(state, Helpers.BuildGuacamoleProtocol(handshakeReply));
+            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol(handshakeReply));
 
             state.GuacdHandshakeDone.Set();
 
@@ -172,7 +172,7 @@ namespace GuacamoleSharp.Server
             if (receivedLength <= 0)
                 return;
 
-            state.GuacdResponseOverflowBuffer.Append(Encoding.ASCII.GetString(state.GuacdBuffer[0..receivedLength]));
+            state.GuacdResponseOverflowBuffer.Append(Encoding.UTF8.GetString(state.GuacdBuffer[0..receivedLength]));
             string reponse = state.GuacdResponseOverflowBuffer.ToString();
 
             if (!reponse.Contains(';'))
@@ -181,7 +181,7 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            (string message, int delimiterIndex) = Helpers.ReadResponseUntilDelimiter(reponse);
+            (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadResponseUntilDelimiter(reponse);
             state.GuacdResponseOverflowBuffer.Remove(0, delimiterIndex);
 
             GSListener.Send(state, message);

@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Server
 {
-    internal static class Helpers
+    internal static class GuacamoleProtocolHelpers
     {
         #region Internal Methods
 
