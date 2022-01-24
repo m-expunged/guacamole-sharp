@@ -3,7 +3,7 @@ using System.Text;
 
 namespace GuacamoleSharp.Server
 {
-    public class TokenEncrypter
+    public static class TokenEncrypter
     {
         #region Private Fields
 

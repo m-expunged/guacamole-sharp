@@ -12,7 +12,7 @@ namespace GuacamoleSharp.Server
             for (int i = 0; i < args.Length; i++)
             {
                 var arg = args[i] ?? string.Empty;
-                parts.Add($"{arg.Length}.{arg.ToLowerInvariant()}");
+                parts.Add($"{arg.Length}.{arg}");
             }
 
             return string.Join(',', parts) + ";";
@@ -36,13 +36,15 @@ namespace GuacamoleSharp.Server
 
         internal static (string content, int index) ReadResponseUntilDelimiter(string content)
         {
-            int index = content.IndexOf(';');
+            int index = content.LastIndexOf(';');
 
-            if (index <= 0)
+            if (index == -1)
                 return (string.Empty, index);
 
-            if (content.Length - 1 <= index)
+            if (content.Length - 1 == index)
                 return (content, content.Length);
+
+            index += 1;
 
             return (content[..index], index);
         }

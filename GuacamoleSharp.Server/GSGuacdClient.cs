@@ -1,6 +1,7 @@
 ﻿using GuacamoleSharp.Common.Models;
 using GuacamoleSharp.Common.Settings;
 using Serilog;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -12,6 +13,7 @@ namespace GuacamoleSharp.Server
         #region Private Fields
 
         private static readonly ILogger _logger = Log.ForContext(typeof(GSGuacdClient));
+        private static readonly ManualResetEvent _receiveDone = new(false);
         private static readonly ManualResetEvent _sendDone = new(false);
         private static GSSettings _gssettings = null!;
 
@@ -55,11 +57,16 @@ namespace GuacamoleSharp.Server
             state.GuacdSocket.BeginConnect(endpoint, new AsyncCallback(ConnectCallback), state);
         }
 
-        internal static void SendWithReply(ConnectionState state, string message)
+        internal static void Send(ConnectionState state, string message)
         {
-            Send(state, message);
+            _sendDone.Reset();
 
-            state.GuacdSocket.BeginReceive(state.GuacdBuffer, 0, state.GuacdBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
+            _logger.Debug("[Connection {Id}] <<<W2G< {Message}", state.ConnectionId, message);
+
+            byte[] data = Encoding.ASCII.GetBytes(message);
+            state.GuacdSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
+
+            _sendDone.WaitOne();
         }
 
         #endregion Internal Methods
@@ -119,7 +126,35 @@ namespace GuacamoleSharp.Server
 
             Send(state, Helpers.BuildGuacamoleProtocol(handshakeReply));
 
-            state.GuacdSocket.BeginReceive(state.GuacdBuffer, 0, state.GuacdBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
+            state.GuacdHandshakeDone.Set();
+
+            BackgroundWorker guacdThread = new();
+            guacdThread.DoWork += new DoWorkEventHandler(Receive_DoWork);
+            guacdThread.RunWorkerAsync(state);
+        }
+
+        private static void Receive_DoWork(object? sender, DoWorkEventArgs e)
+        {
+            ConnectionState state = (ConnectionState)e.Argument!;
+
+            state.ClientHandshakeDone.WaitOne();
+
+            try
+            {
+                while (!state.Closed)
+                {
+                    _receiveDone.Reset();
+
+                    state.GuacdSocket.BeginReceive(state.GuacdBuffer, 0, state.GuacdBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
+
+                    _receiveDone.WaitOne();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error while running guacd socket client thread: {ex}", ex);
+                Close(state);
+            }
         }
 
         private static void ReceiveCallback(IAsyncResult ar)
@@ -135,10 +170,7 @@ namespace GuacamoleSharp.Server
             }
 
             if (receivedLength <= 0)
-            {
-                state.GuacdSocket.BeginReceive(state.GuacdBuffer, 0, state.GuacdBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
                 return;
-            }
 
             state.GuacdResponseOverflowBuffer.Append(Encoding.ASCII.GetString(state.GuacdBuffer[0..receivedLength]));
             string reponse = state.GuacdResponseOverflowBuffer.ToString();
@@ -152,19 +184,9 @@ namespace GuacamoleSharp.Server
             (string message, int delimiterIndex) = Helpers.ReadResponseUntilDelimiter(reponse);
             state.GuacdResponseOverflowBuffer.Remove(0, delimiterIndex);
 
-            GSListener.SendWithReply(state, message);
-        }
+            GSListener.Send(state, message);
 
-        private static void Send(ConnectionState state, string message)
-        {
-            _sendDone.Reset();
-
-            _logger.Debug("[Connection {Id}] <<<W2G< {Message}", state.ConnectionId, message);
-
-            byte[] data = Encoding.ASCII.GetBytes(message);
-            state.GuacdSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
-
-            _sendDone.WaitOne();
+            _receiveDone.Set();
         }
 
         private static void SendCallback(IAsyncResult ar)

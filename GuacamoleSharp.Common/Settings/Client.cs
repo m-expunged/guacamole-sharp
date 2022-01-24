@@ -4,9 +4,9 @@
     {
         #region Public Properties
 
-        public Dictionary<string, List<string>> ConnectionAllowedUnencryptedSettings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, List<string>> ConnectionAllowedUnencryptedSettings { get; set; } = new();
 
-        public Dictionary<string, Dictionary<string, string>> ConnectionDefaultSettings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, Dictionary<string, string>> ConnectionDefaultSettings { get; set; } = new();
 
         #endregion Public Properties
     }
