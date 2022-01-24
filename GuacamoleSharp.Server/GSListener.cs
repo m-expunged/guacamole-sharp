@@ -213,13 +213,6 @@ namespace GuacamoleSharp.Server
             if (receivedLength <= 0)
                 return;
 
-            // WebSocket frame incomplete
-            bool fin = (state.ClientBuffer[0] & 0b10000000) != 0;
-            if (!fin)
-            {
-                return;
-            }
-
             state.ClientResponseOverflowBuffer.Append(WebSocketUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength], receivedLength));
             string reponse = state.ClientResponseOverflowBuffer.ToString();
 

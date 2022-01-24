@@ -100,7 +100,7 @@ namespace GuacamoleSharp.Server
                 if (frame.DataLength == 0)
                     continue;
 
-                var framePayload = payload[payloadStartIndex..(payloadStartIndex + frame.FrameLength - 1)];
+                var framePayload = payload[payloadStartIndex..(payloadStartIndex + frame.FrameLength)];
                 var masks = framePayload[frame.MaskIndex..(frame.MaskIndex + 4)];
                 int firstDataByteIndex = frame.MaskIndex + 4;
                 byte[] decoded = new byte[framePayload.Length - firstDataByteIndex];
