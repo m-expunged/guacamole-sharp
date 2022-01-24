@@ -50,15 +50,15 @@ The token encryption key defined in appsettings.json/Dockerfile inside the url:
 
 And a connection object in the request body:
 
-    ````json
-    {
-      "settings": {
-        "hostname": "127.0.0.1",
-        "port": "22"
-      },
-      "type": "ssh"
-    }
-      ```
+````json
+{
+  "settings": {
+    "hostname": "127.0.0.1",
+    "port": "22"
+  },
+  "type": "ssh"
+}
+  ```
 
 Curl example:
 
@@ -195,3 +195,4 @@ In order to use GuacamoleSharp, you will need to use the guacamole-common-js lib
 A good way to get started is to look at the Angular example that is included in the repository, using the guacamole-common-js npm package. You might need to defined a d.ts file if you are using Typescript in your project.
 
 If you want to include your own examples or notice something that could have been done better feel free to open a pull request.
+````
