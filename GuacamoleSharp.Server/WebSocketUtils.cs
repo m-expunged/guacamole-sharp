@@ -1,14 +1,28 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Specialized;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace GuacamoleSharp.Server
 {
+    internal struct WebSocketFrameDimensions
+    {
+        #region Public Properties
+
+        public int DataLength { get; set; }
+        public int FrameLength { get; set; }
+        public int MaskIndex { get; set; }
+
+        #endregion Public Properties
+    }
+
     internal static class WebSocketUtils
     {
         #region Private Fields
 
-        private static readonly Regex _rxSwk = new("Sec-WebSocket-Key: (.*)");
+        private static readonly Regex _rxQuery = new(@"GET...(.*?)HTTP", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex _rxSwk = new("Sec-WebSocket-Key: (.*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         #endregion Private Fields
 
@@ -28,29 +42,79 @@ namespace GuacamoleSharp.Server
             return httpUpgradeResponse;
         }
 
-        internal static string ReadFromFrame(byte[] payload)
+        internal static List<WebSocketFrameDimensions> GetFrames(byte[] payload, int receivedLength, List<WebSocketFrameDimensions> frames)
         {
-            int dataLength = payload[1] & 127;
-            int maskIndex = 2;
-            if (dataLength == 126)
+            int frameStartIndex = frames.Any() ? frames.Sum(x => x.FrameLength) : 0;
+            int dataLength = payload[frameStartIndex..][1] & 127;
+            int maskIndex;
+            int frameLength;
+
+            if (dataLength <= 125)
+            {
+                maskIndex = 2;
+                frameLength = dataLength + 6;
+            }
+            else if (dataLength == 126)
             {
                 maskIndex = 4;
+                frameLength = dataLength + 8;
             }
             else if (dataLength == 127)
             {
                 maskIndex = 10;
+                frameLength = dataLength + 14;
             }
-
-            var masks = payload[maskIndex..(maskIndex + 4)];
-            int firstDataByteIndex = maskIndex + 4;
-            byte[] decoded = new byte[payload.Length - firstDataByteIndex];
-
-            for (int i = firstDataByteIndex, j = 0; i < payload.Length; i++, j++)
+            else
             {
-                decoded[j] = (byte)(payload[i] ^ masks.ElementAt(j % 4));
+                throw new ArgumentException("Unable to parse websocket frame length");
             }
 
-            return Encoding.UTF8.GetString(decoded);
+            frames.Add(new WebSocketFrameDimensions { FrameLength = frameLength, DataLength = dataLength, MaskIndex = maskIndex });
+
+            if (receivedLength > frames.Sum(x => x.FrameLength))
+            {
+                GetFrames(payload, receivedLength, frames);
+            }
+
+            return frames;
+        }
+
+        internal static NameValueCollection ParseQueryStringFromHttpRequest(string content)
+        {
+            var queryMatches = _rxQuery.Matches(content);
+            var queryString = queryMatches[0].Groups[1].Value.Trim();
+            var query = HttpUtility.ParseQueryString(queryString);
+
+            return query;
+        }
+
+        internal static string ReadFromFrame(byte[] payload, int receivedLength)
+        {
+            List<WebSocketFrameDimensions> frames = GetFrames(payload, receivedLength, new());
+
+            string message = string.Empty;
+            int payloadStartIndex = 0;
+
+            foreach (var frame in frames)
+            {
+                if (frame.DataLength == 0)
+                    continue;
+
+                var framePayload = payload[payloadStartIndex..(payloadStartIndex + frame.FrameLength - 1)];
+                var masks = framePayload[frame.MaskIndex..(frame.MaskIndex + 4)];
+                int firstDataByteIndex = frame.MaskIndex + 4;
+                byte[] decoded = new byte[framePayload.Length - firstDataByteIndex];
+
+                for (int i = firstDataByteIndex, j = 0; i < framePayload.Length; i++, j++)
+                {
+                    decoded[j] = (byte)(framePayload[i] ^ masks.ElementAt(j % 4));
+                }
+
+                payloadStartIndex += frame.FrameLength;
+                message += Encoding.UTF8.GetString(decoded);
+            }
+
+            return message;
         }
 
         internal static byte[] WriteToFrame(string message)

@@ -7,8 +7,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Web;
 
 namespace GuacamoleSharp.Server
 {
@@ -20,7 +18,6 @@ namespace GuacamoleSharp.Server
         private static readonly BackgroundWorker _listenerThread = new();
         private static readonly ILogger _logger = Log.ForContext(typeof(GSListener));
         private static readonly ManualResetEvent _receiveDone = new(false);
-        private static readonly Regex _rxQuery = new(@"GET...(.*?)HTTP", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly ManualResetEvent _sendDone = new(false);
 
         private static ulong _connectionCount = 0;
@@ -96,20 +93,6 @@ namespace GuacamoleSharp.Server
             state.ClientSocket.BeginReceive(state.ClientBuffer, 0, state.ClientBuffer.Length, SocketFlags.None, new AsyncCallback(ConnectCallback), state);
         }
 
-        private static void AddDefaultConnectionSettings(this Connection connection)
-        {
-            if (!_gssettings.Client.ConnectionDefaultSettings.ContainsKey(connection.Type))
-                return;
-
-            foreach (var setting in _gssettings.Client.ConnectionDefaultSettings[connection.Type])
-            {
-                if (!connection.Settings.ContainsKey(setting.Key))
-                {
-                    connection.Settings.Add(setting.Key, setting.Value);
-                }
-            }
-        }
-
         private static void ConnectCallback(IAsyncResult ar)
         {
             var state = (ConnectionState)ar.AsyncState!;
@@ -126,9 +109,7 @@ namespace GuacamoleSharp.Server
             if (receivedLength > 0)
             {
                 var content = Encoding.UTF8.GetString(state.ClientBuffer);
-                var queryMatches = _rxQuery.Matches(content);
-                var queryString = queryMatches[0].Groups[1].Value.Trim();
-                var query = HttpUtility.ParseQueryString(queryString);
+                NameValueCollection query = WebSocketUtils.ParseQueryStringFromHttpRequest(content);
                 var token = query["token"];
 
                 if (token == null)
@@ -152,8 +133,8 @@ namespace GuacamoleSharp.Server
                 }
 
                 connection.Type = connection.Type.ToLowerInvariant();
-                connection.AddDefaultConnectionSettings();
-                connection.OverwriteWithUnencryptedConnectionSettings(query);
+                GuacamoleProtocolUtils.AddDefaultConnectionSettings(connection, _gssettings.Client.ConnectionDefaultSettings);
+                GuacamoleProtocolUtils.OverwriteConnectionWithUnencryptedConnectionSettings(connection, query, _gssettings.Client.ConnectionAllowedUnencryptedSettings);
 
                 state.Connection = connection;
                 state.LastActivity = DateTime.Now;
@@ -190,32 +171,6 @@ namespace GuacamoleSharp.Server
                 listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
 
                 _connectDone.WaitOne();
-            }
-        }
-
-        private static void OverwriteWithUnencryptedConnectionSettings(this Connection connection, NameValueCollection query)
-        {
-            if (!_gssettings.Client.ConnectionAllowedUnencryptedSettings.ContainsKey(connection.Type))
-                return;
-
-            IEnumerable<string> validQueryProps = query.AllKeys
-                .Where(x => x != null && !string.IsNullOrWhiteSpace(x))
-                .Where(x => query[x] != null && !string.IsNullOrWhiteSpace(query[x]))!;
-
-            Dictionary<string, string> unencryptedConnectionSettings = validQueryProps
-                .Where(x => _gssettings.Client.ConnectionAllowedUnencryptedSettings[connection.Type].Contains(x))
-                .ToDictionary(x => x, x => query[x])!;
-
-            foreach (var setting in unencryptedConnectionSettings)
-            {
-                if (connection.Settings.ContainsKey(setting.Key))
-                {
-                    connection.Settings[setting.Key] = setting.Value;
-                }
-                else
-                {
-                    connection.Settings.Add(setting.Key, setting.Value);
-                }
             }
         }
 
@@ -258,9 +213,14 @@ namespace GuacamoleSharp.Server
             if (receivedLength <= 0)
                 return;
 
-            // TODO: Bug here! WebSocket frame decoded before full arrived?
+            // WebSocket frame incomplete
+            bool fin = (state.ClientBuffer[0] & 0b10000000) != 0;
+            if (!fin)
+            {
+                return;
+            }
 
-            state.ClientResponseOverflowBuffer.Append(WebSocketUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength]));
+            state.ClientResponseOverflowBuffer.Append(WebSocketUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength], receivedLength));
             string reponse = state.ClientResponseOverflowBuffer.ToString();
 
             if (!reponse.Contains(';'))

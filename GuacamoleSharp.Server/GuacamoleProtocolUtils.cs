@@ -1,10 +1,25 @@
 ﻿using GuacamoleSharp.Common.Models;
+using System.Collections.Specialized;
 
 namespace GuacamoleSharp.Server
 {
     internal static class GuacamoleProtocolUtils
     {
         #region Internal Methods
+
+        internal static void AddDefaultConnectionSettings(Connection connection, Dictionary<string, Dictionary<string, string>> connectionDefaultSettings)
+        {
+            if (!connectionDefaultSettings.ContainsKey(connection.Type))
+                return;
+
+            foreach (var setting in connectionDefaultSettings[connection.Type])
+            {
+                if (!connection.Settings.ContainsKey(setting.Key))
+                {
+                    connection.Settings.Add(setting.Key, setting.Value);
+                }
+            }
+        }
 
         internal static string BuildGuacamoleProtocol(params string?[] args)
         {
@@ -32,6 +47,32 @@ namespace GuacamoleSharp.Server
             }
 
             return replyAttributes.ToArray();
+        }
+
+        internal static void OverwriteConnectionWithUnencryptedConnectionSettings(Connection connection, NameValueCollection query, Dictionary<string, List<string>> connectionAllowedUnencryptedSettings)
+        {
+            if (!connectionAllowedUnencryptedSettings.ContainsKey(connection.Type))
+                return;
+
+            IEnumerable<string> validQueryProps = query.AllKeys
+                .Where(x => x != null && !string.IsNullOrWhiteSpace(x))
+                .Where(x => query[x] != null && !string.IsNullOrWhiteSpace(query[x]))!;
+
+            Dictionary<string, string> unencryptedConnectionSettings = validQueryProps
+                .Where(x => connectionAllowedUnencryptedSettings[connection.Type].Contains(x))
+                .ToDictionary(x => x, x => query[x])!;
+
+            foreach (var setting in unencryptedConnectionSettings)
+            {
+                if (connection.Settings.ContainsKey(setting.Key))
+                {
+                    connection.Settings[setting.Key] = setting.Value;
+                }
+                else
+                {
+                    connection.Settings.Add(setting.Key, setting.Value);
+                }
+            }
         }
 
         internal static (string content, int index) ReadResponseUntilDelimiter(string content)
