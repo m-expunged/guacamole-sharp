@@ -15,6 +15,7 @@ namespace GuacamoleSharp.Server
         private static readonly ILogger _logger = Log.ForContext(typeof(GSGuacdClient));
         private static readonly ManualResetEvent _receiveDone = new(false);
         private static readonly ManualResetEvent _sendDone = new(false);
+
         private static GSSettings _gssettings = null!;
 
         #endregion Private Fields

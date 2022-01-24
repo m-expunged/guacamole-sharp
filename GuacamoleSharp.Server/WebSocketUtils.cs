@@ -1,10 +1,32 @@
-﻿using System.Text;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GuacamoleSharp.Server
 {
-    internal static class WebsocketFrameUtils
+    internal static class WebSocketUtils
     {
+        #region Private Fields
+
+        private static readonly Regex _rxSwk = new("Sec-WebSocket-Key: (.*)");
+
+        #endregion Private Fields
+
         #region Internal Methods
+
+        internal static string BuildHttpUpgradeResponse(string content)
+        {
+            var swkMatches = _rxSwk.Match(content);
+            var swk = swkMatches.Groups[1].Value.Trim();
+            var swkSha1Base64 = Convert.ToBase64String(SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(swk + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
+            var httpUpgradeResponse = "HTTP/1.1 101 Switching Protocols\r\n"
+                + "Upgrade: websocket\r\n"
+                + "Connection: Upgrade\r\n"
+                + "Sec-WebSocket-Protocol: guacamole\r\n"
+                + "Sec-WebSocket-Accept: " + swkSha1Base64 + "\r\n\r\n";
+
+            return httpUpgradeResponse;
+        }
 
         internal static string ReadFromFrame(byte[] payload)
         {

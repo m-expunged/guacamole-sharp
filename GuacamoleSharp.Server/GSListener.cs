@@ -5,7 +5,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -18,14 +17,14 @@ namespace GuacamoleSharp.Server
         #region Private Fields
 
         private static readonly ManualResetEvent _connectDone = new(false);
+        private static readonly BackgroundWorker _listenerThread = new();
         private static readonly ILogger _logger = Log.ForContext(typeof(GSListener));
         private static readonly ManualResetEvent _receiveDone = new(false);
         private static readonly Regex _rxQuery = new(@"GET...(.*?)HTTP", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly Regex _rxSwk = new("Sec-WebSocket-Key: (.*)");
         private static readonly ManualResetEvent _sendDone = new(false);
+
         private static ulong _connectionCount = 0;
         private static GSSettings _gssettings = null!;
-        private static BackgroundWorker _listenerThread = new();
 
         #endregion Private Fields
 
@@ -57,7 +56,7 @@ namespace GuacamoleSharp.Server
 
             _logger.Debug("[Connection {Id}] >>>G2W> {Message}", state.ConnectionId, message);
 
-            byte[] data = isWSF ? WebsocketFrameUtils.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
+            byte[] data = isWSF ? WebSocketUtils.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
             state.ClientSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
 
             _sendDone.WaitOne();
@@ -161,16 +160,9 @@ namespace GuacamoleSharp.Server
 
                 GSGuacdClient.Connect(_gssettings, connection, state);
 
-                var swkMatches = _rxSwk.Match(content);
-                var swk = swkMatches.Groups[1].Value.Trim();
-                var swkSha1Base64 = Convert.ToBase64String(SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(swk + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
-                var httpUpgradeResponse = "HTTP/1.1 101 Switching Protocols\r\n"
-                    + "Upgrade: websocket\r\n"
-                    + "Connection: Upgrade\r\n"
-                    + "Sec-WebSocket-Protocol: guacamole\r\n"
-                    + "Sec-WebSocket-Accept: " + swkSha1Base64 + "\r\n\r\n";
+                string upgradeResponse = WebSocketUtils.BuildHttpUpgradeResponse(content);
 
-                Send(state, httpUpgradeResponse, false);
+                Send(state, upgradeResponse, false);
 
                 state.ClientHandshakeDone.Set();
 
@@ -268,7 +260,7 @@ namespace GuacamoleSharp.Server
 
             // TODO: Bug here! WebSocket frame decoded before full arrived?
 
-            state.ClientResponseOverflowBuffer.Append(WebsocketFrameUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength]));
+            state.ClientResponseOverflowBuffer.Append(WebSocketUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength]));
             string reponse = state.ClientResponseOverflowBuffer.ToString();
 
             if (!reponse.Contains(';'))
