@@ -51,13 +51,13 @@ namespace GuacamoleSharp.Server
             }
         }
 
-        internal static void Send(ConnectionState state, string message, bool isFrame = true)
+        internal static void Send(ConnectionState state, string message, bool isWSF = true)
         {
             _sendDone.Reset();
 
             _logger.Debug("[Connection {Id}] >>>G2W> {Message}", state.ConnectionId, message);
 
-            byte[] data = isFrame ? WebsocketFrameHelpers.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
+            byte[] data = isWSF ? WebsocketFrameUtils.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
             state.ClientSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
 
             _sendDone.WaitOne();
@@ -266,7 +266,9 @@ namespace GuacamoleSharp.Server
             if (receivedLength <= 0)
                 return;
 
-            state.ClientResponseOverflowBuffer.Append(Encoding.UTF8.GetString(state.ClientBuffer[0..receivedLength]));
+            // TODO: Bug here! WebSocket frame decoded before full arrived?
+
+            state.ClientResponseOverflowBuffer.Append(WebsocketFrameUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength]));
             string reponse = state.ClientResponseOverflowBuffer.ToString();
 
             if (!reponse.Contains(';'))
@@ -275,7 +277,7 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadResponseUntilDelimiter(reponse);
+            (string message, int delimiterIndex) = GuacamoleProtocolUtils.ReadResponseUntilDelimiter(reponse);
             state.ClientResponseOverflowBuffer.Remove(0, delimiterIndex);
 
             GSGuacdClient.Send(state, message);

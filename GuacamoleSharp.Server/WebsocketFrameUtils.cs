@@ -2,13 +2,38 @@
 
 namespace GuacamoleSharp.Server
 {
-    internal static class WebsocketFrameHelpers
+    internal static class WebsocketFrameUtils
     {
         #region Internal Methods
 
+        internal static string ReadFromFrame(byte[] payload)
+        {
+            int dataLength = payload[1] & 127;
+            int maskIndex = 2;
+            if (dataLength == 126)
+            {
+                maskIndex = 4;
+            }
+            else if (dataLength == 127)
+            {
+                maskIndex = 10;
+            }
+
+            var masks = payload[maskIndex..(maskIndex + 4)];
+            int firstDataByteIndex = maskIndex + 4;
+            byte[] decoded = new byte[payload.Length - firstDataByteIndex];
+
+            for (int i = firstDataByteIndex, j = 0; i < payload.Length; i++, j++)
+            {
+                decoded[j] = (byte)(payload[i] ^ masks.ElementAt(j % 4));
+            }
+
+            return Encoding.UTF8.GetString(decoded);
+        }
+
         internal static byte[] WriteToFrame(string message)
         {
-            int frameCount = 0;
+            int frameCount;
             byte[] payload = Encoding.UTF8.GetBytes(message);
             byte[] frame = new byte[10];
             frame[0] = (byte)129;

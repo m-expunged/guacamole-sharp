@@ -81,7 +81,7 @@ namespace GuacamoleSharp.Server
             _logger.Information("[Connection {Id}] Socket connected to {Endpoint}", state.ConnectionId, state.GuacdSocket.RemoteEndPoint?.ToString());
             _logger.Information("Selecting connection type: {type}", state.Connection.Type);
 
-            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("select", state.Connection.Type.ToLowerInvariant()));
+            Send(state, GuacamoleProtocolUtils.BuildGuacamoleProtocol("select", state.Connection.Type.ToLowerInvariant()));
 
             state.GuacdSocket.BeginReceive(state.GuacdBuffer, 0, state.GuacdBuffer.Length, SocketFlags.None, new AsyncCallback(HandshakeCallback), state);
         }
@@ -113,18 +113,18 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            (string handshake, int delimiterIndex) = GuacamoleProtocolHelpers.ReadResponseUntilDelimiter(reponse);
+            (string handshake, int delimiterIndex) = GuacamoleProtocolUtils.ReadResponseUntilDelimiter(reponse);
             state.GuacdResponseOverflowBuffer.Remove(0, delimiterIndex);
-            var handshakeReply = GuacamoleProtocolHelpers.BuildHandshakeReply(state.Connection.Settings, handshake);
+            var handshakeReply = GuacamoleProtocolUtils.BuildHandshakeReply(state.Connection.Settings, handshake);
 
-            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("size", state.Connection.Settings["width"], state.Connection.Settings["height"], state.Connection.Settings["dpi"]));
-            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("audio", "audio/L16", state.Connection.Settings["audio"]));
-            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("video", state.Connection.Settings["video"]));
-            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol("image", "image/png", "image/jpeg", "image/webp", state.Connection.Settings["image"]));
+            Send(state, GuacamoleProtocolUtils.BuildGuacamoleProtocol("size", state.Connection.Settings["width"], state.Connection.Settings["height"], state.Connection.Settings["dpi"]));
+            Send(state, GuacamoleProtocolUtils.BuildGuacamoleProtocol("audio", "audio/L16", state.Connection.Settings["audio"]));
+            Send(state, GuacamoleProtocolUtils.BuildGuacamoleProtocol("video", state.Connection.Settings["video"]));
+            Send(state, GuacamoleProtocolUtils.BuildGuacamoleProtocol("image", "image/png", "image/jpeg", "image/webp", state.Connection.Settings["image"]));
 
             _logger.Debug("Server sent handshake: {handshake}", handshake);
 
-            Send(state, GuacamoleProtocolHelpers.BuildGuacamoleProtocol(handshakeReply));
+            Send(state, GuacamoleProtocolUtils.BuildGuacamoleProtocol(handshakeReply));
 
             state.GuacdHandshakeDone.Set();
 
@@ -181,7 +181,7 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadResponseUntilDelimiter(reponse);
+            (string message, int delimiterIndex) = GuacamoleProtocolUtils.ReadResponseUntilDelimiter(reponse);
             state.GuacdResponseOverflowBuffer.Remove(0, delimiterIndex);
 
             GSListener.Send(state, message);
