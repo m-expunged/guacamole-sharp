@@ -192,6 +192,6 @@ Default values < Token string values < Unencrypted values
 
 In order to use GuacamoleSharp, you will need to use the guacamole-common-js library in your frontend. You can find a detailed explanation in the Apache Guacamole Docs.
 
-A good way to get started is to look at the Angular example that is included in the repository, using the guacamole-common-js npm package. You might need to defined a d.ts file if you are using Typescript in your project.
+A good way to get started is to look at the Angular example that is included in the repository, using the guacamole-common-js npm package. You might need to create a d.ts file if you are using Typescript in your project.
 
 If you want to include your own examples or notice something that could have been done better feel free to open a pull request.
