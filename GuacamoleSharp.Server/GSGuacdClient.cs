@@ -49,13 +49,23 @@ namespace GuacamoleSharp.Server
             if (_gssettings == null)
                 _gssettings = gssettings;
 
-            IPEndPoint endpoint = new(IPAddress.Parse(gssettings.Guacd.Host), gssettings.Guacd.Port);
-
-            _logger.Information("[Connection {Id}] Attemping connection to: {Endpoint}", state.ConnectionId, endpoint.ToString());
+            _logger.Information("[Connection {Id}] Attemping connection to guacd proxy at: {Hostname}:{Port}", state.ConnectionId, gssettings.Guacd.Hostname, gssettings.Guacd.Port);
             _logger.Information("[Connection {Id}] Connection settings: {@connection}", state.ConnectionId, connection);
 
-            state.GuacdSocket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            state.GuacdSocket.BeginConnect(endpoint, new AsyncCallback(ConnectCallback), state);
+            if (IPAddress.TryParse(gssettings.Guacd.Hostname, out IPAddress? address))
+            {
+                IPEndPoint endpoint = new(address, gssettings.Guacd.Port);
+                state.GuacdSocket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                state.GuacdSocket.BeginConnect(endpoint, new AsyncCallback(ConnectCallback), state);
+            }
+            else
+            {
+                address = Dns.GetHostAddresses(gssettings.Guacd.Hostname).FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork)
+                    ?? throw new ArgumentNullException(nameof(address), "Could not parse ip address for guacd");
+
+                state.GuacdSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                state.GuacdSocket.BeginConnect(gssettings.Guacd.Hostname, gssettings.Guacd.Port, new AsyncCallback(ConnectCallback), state);
+            }
         }
 
         internal static void Send(ConnectionState state, string message)

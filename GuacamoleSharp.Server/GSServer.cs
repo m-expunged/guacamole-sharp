@@ -27,7 +27,7 @@ namespace GuacamoleSharp.Server
 
         public void Start()
         {
-            _logger.LogInformation("Starting guacamole sharp websocket server...");
+            _logger.LogInformation("Starting guacamole sharp websocket server... {@settings}", _gssettings);
 
             GSListener.StartListening(_gssettings);
         }

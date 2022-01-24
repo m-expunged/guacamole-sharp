@@ -4,6 +4,9 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 
+ENV GSSettings:Guacd:Hostname=guacd
+ENV GSSettings:Guacd:Port=4822
+
 EXPOSE 80/tcp
 EXPOSE 8080/tcp
 
