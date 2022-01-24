@@ -3,7 +3,7 @@
 GuacamoleSharp is a bare-bones C# replacement of the Apache Guacamole server-side Java servlet.
 It is intended for customizable integration of Apache Guacamole into existing frontend projects with their own user and connection management.
 
-Like the official Java guacamole-client, GuacamoleSharp makes use of the Guacamole-Protocol and is intended to be used with 'guacamole-common-js' (frontend client) and 'guacd' (server-side proxy) by Apache. Check out the [Apache Guacamole Docs](https://guacamole.apache.org/doc/gug/) for more detailed information.
+Like the official Java guacamole-client, GuacamoleSharp makes use of the guacamole-protocol and is intended to be used with 'guacamole-common-js' (frontend client) and 'guacd' (server-side proxy) by Apache. Check out the [Apache Guacamole Docs](https://guacamole.apache.org/doc/gug/) for more detailed information.
 
 Inspired by Vadim Pronin's [guacamole-lite](https://github.com/vadimpronin/guacamole-lite).
 
