@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 
 namespace GuacamoleSharp.Server
 {
-    internal static class GuacamoleProtocolUtils
+    internal static class GuacamoleProtocolHelpers
     {
         #region Internal Methods
 
@@ -21,18 +21,6 @@ namespace GuacamoleSharp.Server
             }
         }
 
-        internal static string BuildGuacamoleProtocol(params string?[] args)
-        {
-            List<string> parts = new();
-            for (int i = 0; i < args.Length; i++)
-            {
-                var arg = args[i] ?? string.Empty;
-                parts.Add($"{arg.Length}.{arg}");
-            }
-
-            return string.Join(',', parts) + ";";
-        }
-
         internal static string?[] BuildHandshakeReply(Settings settings, string handshake)
         {
             var handshakeAttributes = handshake.Split(',');
@@ -47,6 +35,18 @@ namespace GuacamoleSharp.Server
             }
 
             return replyAttributes.ToArray();
+        }
+
+        internal static string BuildProtocol(params string?[] args)
+        {
+            List<string> parts = new();
+            for (int i = 0; i < args.Length; i++)
+            {
+                var arg = args[i] ?? string.Empty;
+                parts.Add($"{arg.Length}.{arg}");
+            }
+
+            return string.Join(',', parts) + ";";
         }
 
         internal static void OverwriteConnectionWithUnencryptedConnectionSettings(Connection connection, NameValueCollection query, Dictionary<string, List<string>> connectionAllowedUnencryptedSettings)
@@ -75,7 +75,7 @@ namespace GuacamoleSharp.Server
             }
         }
 
-        internal static (string content, int index) ReadResponseUntilDelimiter(string content)
+        internal static (string content, int index) ReadProtocolUntilLastDelimiter(string content)
         {
             int index = content.LastIndexOf(';');
 

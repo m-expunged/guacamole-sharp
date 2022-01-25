@@ -12,7 +12,11 @@ namespace GuacamoleSharp.Server
 
         public ManualResetEvent ClientHandshakeDone { get; set; } = new(false);
 
+        public ManualResetEvent ClientReceiveDone { get; set; } = new(false);
+
         public StringBuilder ClientResponseOverflowBuffer { get; } = new();
+
+        public ManualResetEvent ClientSendDone { get; set; } = new(false);
 
         public Socket ClientSocket { get; internal set; } = null!;
 
@@ -22,11 +26,15 @@ namespace GuacamoleSharp.Server
 
         public ulong ConnectionId { get; internal set; }
 
-        public byte[] GuacdBuffer { get; } = new byte[256];
+        public byte[] GuacdBuffer { get; } = new byte[1024];
 
         public ManualResetEvent GuacdHandshakeDone { get; } = new(false);
 
+        public ManualResetEvent GuacdReceiveDone { get; set; } = new(false);
+
         public StringBuilder GuacdResponseOverflowBuffer { get; } = new();
+
+        public ManualResetEvent GuacdSendDone { get; set; } = new(false);
 
         public Socket GuacdSocket { get; internal set; } = null!;
 

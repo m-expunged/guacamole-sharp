@@ -14,11 +14,9 @@ namespace GuacamoleSharp.Server
     {
         #region Private Fields
 
-        private static readonly ManualResetEvent _connectDone = new(false);
+        private static readonly ManualResetEvent _acceptDone = new(false);
         private static readonly BackgroundWorker _listenerThread = new();
         private static readonly ILogger _logger = Log.ForContext(typeof(GSListener));
-        private static readonly ManualResetEvent _receiveDone = new(false);
-        private static readonly ManualResetEvent _sendDone = new(false);
 
         private static ulong _connectionCount = 0;
         private static GSSettings _gssettings = null!;
@@ -49,14 +47,14 @@ namespace GuacamoleSharp.Server
 
         internal static void Send(ConnectionState state, string message, bool isWSF = true)
         {
-            _sendDone.Reset();
+            state.ClientSendDone.Reset();
 
             _logger.Debug("[Connection {Id}] >>>G2W> {Message}", state.ConnectionId, message);
 
-            byte[] data = isWSF ? WebSocketUtils.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
+            byte[] data = isWSF ? WebSocketHelpers.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
             state.ClientSocket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
 
-            _sendDone.WaitOne();
+            state.ClientSendDone.WaitOne();
         }
 
         internal static void StartListening(GSSettings gssettings)
@@ -100,7 +98,9 @@ namespace GuacamoleSharp.Server
             if (DateTime.Now > state.LastActivity.AddMinutes(_gssettings.WebSocket.MaxInactivityAllowedInMin))
             {
                 _logger.Warning("[Connection {Id}] Timeout", state.LastActivity);
+
                 Close(state);
+                _acceptDone.Set();
                 return;
             }
 
@@ -109,13 +109,15 @@ namespace GuacamoleSharp.Server
             if (receivedLength > 0)
             {
                 var content = Encoding.UTF8.GetString(state.ClientBuffer);
-                NameValueCollection query = WebSocketUtils.ParseQueryStringFromHttpRequest(content);
+                NameValueCollection query = WebSocketHelpers.ParseQueryStringFromRequest(content);
                 var token = query["token"];
 
                 if (token == null)
                 {
                     _logger.Warning("[Connection {Id}] Connection is missing the token query param", state.ConnectionId);
+
                     Close(state);
+                    _acceptDone.Set();
                     return;
                 }
 
@@ -128,22 +130,24 @@ namespace GuacamoleSharp.Server
                 if (connection == null)
                 {
                     _logger.Warning("[Connection {Id}] Connection serialization returned null", state.ConnectionId);
+
                     Close(state);
+                    _acceptDone.Set();
                     return;
                 }
 
                 connection.Type = connection.Type.ToLowerInvariant();
-                GuacamoleProtocolUtils.AddDefaultConnectionSettings(connection, _gssettings.Client.ConnectionDefaultSettings);
-                GuacamoleProtocolUtils.OverwriteConnectionWithUnencryptedConnectionSettings(connection, query, _gssettings.Client.ConnectionAllowedUnencryptedSettings);
+                GuacamoleProtocolHelpers.AddDefaultConnectionSettings(connection, _gssettings.Client.ConnectionDefaultSettings);
+                GuacamoleProtocolHelpers.OverwriteConnectionWithUnencryptedConnectionSettings(connection, query, _gssettings.Client.ConnectionAllowedUnencryptedSettings);
 
                 state.Connection = connection;
                 state.LastActivity = DateTime.Now;
 
                 GSGuacdClient.Connect(_gssettings, connection, state);
 
-                string upgradeResponse = WebSocketUtils.BuildHttpUpgradeResponse(content);
+                string response = WebSocketHelpers.BuildHttpUpgradeResponseFromRequest(content);
 
-                Send(state, upgradeResponse, false);
+                Send(state, response, false);
 
                 state.ClientHandshakeDone.Set();
 
@@ -151,7 +155,7 @@ namespace GuacamoleSharp.Server
                 _clientThread.DoWork += new DoWorkEventHandler(Receive_DoWork);
                 _clientThread.RunWorkerAsync(state);
 
-                _connectDone.Set();
+                _acceptDone.Set();
             }
             else
             {
@@ -162,15 +166,15 @@ namespace GuacamoleSharp.Server
         private static void Listen_DoWork(object? sender, DoWorkEventArgs e)
         {
             Socket listener = (Socket)e.Argument!;
-            listener.Listen(1);
+            listener.Listen(10);
 
             while (true)
             {
-                _connectDone.Reset();
+                _acceptDone.Reset();
 
                 listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
 
-                _connectDone.WaitOne();
+                _acceptDone.WaitOne();
             }
         }
 
@@ -184,16 +188,16 @@ namespace GuacamoleSharp.Server
             {
                 while (!state.Closed)
                 {
-                    _receiveDone.Reset();
+                    state.ClientReceiveDone.Reset();
 
                     state.ClientSocket.BeginReceive(state.ClientBuffer, 0, state.ClientBuffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
 
-                    _receiveDone.WaitOne();
+                    state.ClientReceiveDone.WaitOne();
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error("Errow while running socket listener thread: {ex}", ex);
+                _logger.Error("[Connection {Id}] Errow while running socket listener thread: {ex}", state.ConnectionId, ex);
                 GSGuacdClient.Close(state);
             }
         }
@@ -201,19 +205,48 @@ namespace GuacamoleSharp.Server
         private static void ReceiveCallback(IAsyncResult ar)
         {
             var state = (ConnectionState)ar.AsyncState!;
-            var receivedLength = state.ClientSocket.EndReceive(ar);
+
+            if (state.Closed)
+            {
+                state.ClientReceiveDone.Set();
+                return;
+            }
+
+            int receivedLength;
+
+            try
+            {
+                receivedLength = state.ClientSocket.EndReceive(ar);
+            }
+            catch (Exception)
+            {
+                _logger.Warning("[Connection {Id}] Client socket tried to receive data from closed connection", state.ConnectionId);
+
+                if (!state.Closed)
+                {
+                    GSGuacdClient.Close(state);
+                }
+
+                state.ClientReceiveDone.Set();
+                return;
+            }
 
             if (DateTime.Now > state.LastActivity.AddMinutes(_gssettings.WebSocket.MaxInactivityAllowedInMin))
             {
                 _logger.Warning("[Connection {Id}] Timeout", state.LastActivity);
+
                 GSGuacdClient.Close(state);
+                state.ClientReceiveDone.Set();
                 return;
             }
 
             if (receivedLength <= 0)
+            {
+                state.ClientReceiveDone.Set();
                 return;
+            }
 
-            state.ClientResponseOverflowBuffer.Append(WebSocketUtils.ReadFromFrame(state.ClientBuffer[0..receivedLength], receivedLength));
+            state.ClientResponseOverflowBuffer.Append(WebSocketHelpers.ReadFromFrames(state.ClientBuffer[0..receivedLength], receivedLength));
             string reponse = state.ClientResponseOverflowBuffer.ToString();
 
             if (!reponse.Contains(';'))
@@ -222,21 +255,44 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            (string message, int delimiterIndex) = GuacamoleProtocolUtils.ReadResponseUntilDelimiter(reponse);
+            (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
             state.ClientResponseOverflowBuffer.Remove(0, delimiterIndex);
 
             GSGuacdClient.Send(state, message);
 
-            _receiveDone.Set();
+            state.ClientReceiveDone.Set();
         }
 
         private static void SendCallback(IAsyncResult ar)
         {
             var state = (ConnectionState)ar.AsyncState!;
-            state.ClientSocket.EndSend(ar);
+
+            if (state.Closed)
+            {
+                state.ClientSendDone.Set();
+                return;
+            }
+
+            try
+            {
+                state.ClientSocket.EndSend(ar);
+            }
+            catch (Exception)
+            {
+                _logger.Warning("[Connection {Id}] Client socket tried to send data to closed connection", state.ConnectionId);
+
+                if (!state.Closed)
+                {
+                    GSGuacdClient.Close(state);
+                }
+
+                state.ClientSendDone.Set();
+                return;
+            }
+
             state.LastActivity = DateTime.Now;
 
-            _sendDone.Set();
+            state.ClientSendDone.Set();
         }
 
         #endregion Private Methods
