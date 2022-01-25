@@ -90,7 +90,7 @@ If you want to specify different ports you can change them in the appsettings.js
 
 The 'WebSocket' and 'Guacd' properties can be safely removed from the appsettings.json and will simply default 8080 and 4822 for ports and localhost for the guacd proxy hostname.
 
-In order to generate the required connection token, a encryption key has to be specified. This can be done in the appsettings.json or the Dockerfile.
+In order to encode and decode the required connection token, a encryption key has to be specified. This can be done in the appsettings.json or the Dockerfile.
 This is the same key you send to the Web API to generate the token.
 
 ```json
