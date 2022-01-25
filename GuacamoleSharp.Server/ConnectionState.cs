@@ -10,17 +10,17 @@ namespace GuacamoleSharp.Server
 
         public byte[] ClientBuffer { get; } = new byte[1024];
 
-        public ManualResetEvent ClientHandshakeDone { get; set; } = new(false);
+        public ManualResetEvent ClientHandshakeDone { get; internal set; } = new(false);
 
-        public ManualResetEvent ClientReceiveDone { get; set; } = new(false);
+        public ManualResetEvent ClientReceiveDone { get; internal set; } = new(false);
 
         public StringBuilder ClientResponseOverflowBuffer { get; } = new();
 
-        public ManualResetEvent ClientSendDone { get; set; } = new(false);
+        public ManualResetEvent ClientSendDone { get; internal set; } = new(false);
 
         public Socket ClientSocket { get; internal set; } = null!;
 
-        public bool Closed { get; set; } = false;
+        public bool Closed { get; internal set; } = false;
 
         public Connection Connection { get; internal set; } = null!;
 
@@ -30,11 +30,11 @@ namespace GuacamoleSharp.Server
 
         public ManualResetEvent GuacdHandshakeDone { get; } = new(false);
 
-        public ManualResetEvent GuacdReceiveDone { get; set; } = new(false);
+        public ManualResetEvent GuacdReceiveDone { get; internal set; } = new(false);
 
         public StringBuilder GuacdResponseOverflowBuffer { get; } = new();
 
-        public ManualResetEvent GuacdSendDone { get; set; } = new(false);
+        public ManualResetEvent GuacdSendDone { get; internal set; } = new(false);
 
         public Socket GuacdSocket { get; internal set; } = null!;
 
