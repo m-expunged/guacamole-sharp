@@ -4,9 +4,9 @@
     {
         #region Public Properties
 
-        public Dictionary<string, List<string>> ConnectionAllowedUnencryptedSettings { get; set; } = new();
+        public Dictionary<string, Dictionary<string, string>> DefaultConnectionSettings { get; set; } = new();
 
-        public Dictionary<string, Dictionary<string, string>> ConnectionDefaultSettings { get; set; } = new();
+        public Dictionary<string, List<string>> UnencryptedConnectionSettings { get; set; } = new();
 
         #endregion Public Properties
     }

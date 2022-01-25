@@ -30,11 +30,11 @@ GuacamoleSharp transports the settings for remote connections via an encrypted c
 The token is given to the guacamole-common-js client as the 'token' query parameter while calling the 'connect' method.
 
 ```js
-let tunnel = new Guacamole.WebSocketTunnel('ws://localhost:8080');
+let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:8080");
 let client = new Guacamole.Client(tunnel);
 
 client.connect(
-  'token=hD12AB5Js4WD0Cse6mtgw_8msAieiSi1-vHajL2vAZgAo24yPufxuLKefeZxEYyWXhcbW21iv53Pv18gTXTnXp1i7wClkQ2tDutnIHqrHRo'
+  "token=hD12AB5Js4WD0Cse6mtgw_8msAieiSi1-vHajL2vAZgAo24yPufxuLKefeZxEYyWXhcbW21iv53Pv18gTXTnXp1i7wClkQ2tDutnIHqrHRo"
 );
 ```
 
@@ -112,11 +112,11 @@ Since many connection settings will be the same across different connections, it
 
 Any valid guacamole-protocol argument can be used. The most common settings are already preconfigured and will work out-of-the-box. You might want to change 'width' and 'height' to your preferred resolution.
 
-The properties inside 'ConnectionDefaultSettings' are <strong>required to be in lowercase<strong> unless the guacamole-protocol specifies them otherwise.
+The properties inside 'DefaultConnectionSettings' are <strong>required to be in lowercase<strong> unless the guacamole-protocol specifies them otherwise.
 
 ```json
 "Client": {
-  "ConnectionDefaultSettings": {
+  "DefaultConnectionSettings": {
     "rdp": {
       "args": "connect",
       "port": 3389,
@@ -156,10 +156,10 @@ While most settings for connections should be packed into the encrypted token st
 
 All valid guacamole-protocol arguments can used in their unencrypted form, with the exception of the connection type (ssh/rdp/...) which is the only strictly required argument inside the connection token.
 
-The properties inside 'ConnectionAllowedUnencryptedSettings' are <strong>required to be in lowercase<strong> unless the guacamole-protocol specifies them otherwise.
+The properties inside 'UnencryptedConnectionSettings' are <strong>required to be in lowercase<strong> unless the guacamole-protocol specifies them otherwise.
 
 ```json
-"ConnectionAllowedUnencryptedSettings": {
+"UnencryptedConnectionSettings": {
   "rdp": ["width", "height", "dpi"],
   "vnc": ["width", "height", "dpi"],
   "ssh": ["color-scheme", "font-name", "font-size", "width", "height", "dpi"],
@@ -170,13 +170,13 @@ The properties inside 'ConnectionAllowedUnencryptedSettings' are <strong>require
 Example unencrypted settings usage:
 
 ```js
-let tunnel = new Guacamole.WebSocketTunnel('ws://localhost:8080');
+let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:8080");
 let client = new Guacamole.Client(tunnel);
 
 let connectionString =
-  'token=hD12AB5Js4WD0Cse6mtgw_8msAieiSi1-vHajL2vAZgAo24yPufxuLKefeZxEYyWXhcbW21iv53Pv18gTXTnXp1i7wClkQ2tDutnIHqrHRo';
-connectionString += '&width=1024';
-connectionString += '&height=768';
+  "token=hD12AB5Js4WD0Cse6mtgw_8msAieiSi1-vHajL2vAZgAo24yPufxuLKefeZxEYyWXhcbW21iv53Pv18gTXTnXp1i7wClkQ2tDutnIHqrHRo";
+connectionString += "&width=1024";
+connectionString += "&height=768";
 
 client.connect(connectionString);
 ```

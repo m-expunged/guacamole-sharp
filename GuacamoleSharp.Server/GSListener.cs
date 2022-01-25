@@ -137,8 +137,8 @@ namespace GuacamoleSharp.Server
                 }
 
                 connection.Type = connection.Type.ToLowerInvariant();
-                GuacamoleProtocolHelpers.AddDefaultConnectionSettings(connection, _gssettings.Client.ConnectionDefaultSettings);
-                GuacamoleProtocolHelpers.OverwriteConnectionWithUnencryptedConnectionSettings(connection, query, _gssettings.Client.ConnectionAllowedUnencryptedSettings);
+                GuacamoleProtocolHelpers.AddDefaultConnectionSettings(connection, _gssettings.Client.DefaultConnectionSettings);
+                GuacamoleProtocolHelpers.OverwriteConnectionWithUnencryptedConnectionSettings(connection, query, _gssettings.Client.UnencryptedConnectionSettings);
 
                 state.Connection = connection;
                 state.LastActivity = DateTime.Now;
