@@ -14,7 +14,8 @@ services:
 
   guacamolesharp:
     container_name: guacamolesharp
-    build: 
+    image: guacamolesharp
+    build:
       context: .
     depends_on:
       guacd:
