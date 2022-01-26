@@ -46,15 +46,11 @@ client.connect(
 
 To generate a connection token you can use the GuacamoleSharp Web API.
 
-Sending a POST request to 'HOSTNAME:PORT/api/token/TOKEN_ENCRYPTION_KEY' will return the token string.
+Sending a POST request to 'HOSTNAME:PORT/guacamolesharp/token/TOKEN_ENCRYPTION_KEY' will return the token string.
 
 The request requires two things:
 
-The token encryption key defined in appsettings.json/Dockerfile inside the url:
-
-    .../api/token/MySuperSecretCipherKey
-
-And a connection object in the request body:
+The token encryption key defined in the appsettings.json/Dockerfile inside the url and a connection object in the request body:
 
 ```json
 {
@@ -70,7 +66,7 @@ Curl example:
 
 ```bash
 curl -X 'POST' \
- 'http://localhost:5072/api/Token/MySuperSecretCipherKey' \
+ 'http://localhost:5072/guacamolesharp/token/MySuperSecretCipherKey' \
  -H 'accept: text/plain' \
  -H 'Content-Type: application/json' \
  -d '{

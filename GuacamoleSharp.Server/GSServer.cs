@@ -25,6 +25,11 @@ namespace GuacamoleSharp.Server
 
         #region Public Methods
 
+        public void Restart()
+        {
+            GSListener.Restart();
+        }
+
         public void Start()
         {
             _logger.LogInformation("Starting guacamole sharp websocket server...");

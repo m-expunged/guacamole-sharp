@@ -14,12 +14,13 @@ namespace GuacamoleSharp.Server
     {
         #region Private Fields
 
-        private static readonly ManualResetEvent _acceptDone = new(false);
-        private static readonly BackgroundWorker _listenerThread = new();
+        private static readonly ManualResetEvent _connectDone = new(false);
+        private static readonly List<ConnectionState> _connections = new();
         private static readonly ILogger _logger = Log.ForContext(typeof(GSListener));
-
+        private static readonly ManualResetEvent _restartReady = new(false);
         private static ulong _connectionCount = 0;
         private static GSSettings _gssettings = null!;
+        private static BackgroundWorker _listenerThread = null!;
 
         #endregion Private Fields
 
@@ -29,20 +30,43 @@ namespace GuacamoleSharp.Server
         {
             try
             {
-                _logger.Information("[Connection {Id}] Closing client connection", state.ConnectionId);
-
-                if (state.ClientSocket != null)
+                lock (state.DisposeLock)
                 {
-                    state.ClientSocket.Shutdown(SocketShutdown.Both);
-                    state.ClientSocket.Close();
-                }
+                    if (state.ClientSocket != null && !state.ClientClosed)
+                    {
+                        _logger.Information("[Connection {Id}] Closing client connection", state.ConnectionId);
 
-                state.Closed = true;
+                        state.ClientSocket.Shutdown(SocketShutdown.Both);
+                        state.ClientSocket.Close();
+                    }
+
+                    state.ClientClosed = true;
+                }
             }
             catch (Exception ex)
             {
                 _logger.Error("[Connection {id}] Error while closing client connection: {ex}", state.ConnectionId, ex);
             }
+        }
+
+        internal static void Restart()
+        {
+            _listenerThread.CancelAsync();
+
+            _connectDone.Set();
+            _restartReady.WaitOne();
+
+            foreach (var connection in _connections)
+            {
+                GSGuacdClient.Close(connection);
+            }
+
+            _connections.Clear();
+            _connectionCount = 0;
+
+            StartListening(_gssettings);
+
+            _restartReady.Reset();
         }
 
         internal static void Send(ConnectionState state, string message, bool isWSF = true)
@@ -68,6 +92,7 @@ namespace GuacamoleSharp.Server
 
             _logger.Information("Socket listening on: {ipEndPoint}", endpoint);
 
+            _listenerThread = new();
             _listenerThread.WorkerReportsProgress = true;
             _listenerThread.WorkerSupportsCancellation = true;
             _listenerThread.DoWork += new DoWorkEventHandler(Listen_DoWork);
@@ -80,15 +105,23 @@ namespace GuacamoleSharp.Server
 
         private static void AcceptCallback(IAsyncResult ar)
         {
-            Socket listener = (Socket)ar.AsyncState!;
+            try
+            {
+                Socket listener = (Socket)ar.AsyncState!;
 
-            _connectionCount += 1;
+                ConnectionState state = new();
+                state.ClientSocket = listener.EndAccept(ar);
+                _connectionCount += 1;
+                state.ConnectionId = _connectionCount;
 
-            ConnectionState state = new();
-            state.ClientSocket = listener.EndAccept(ar);
-            state.ConnectionId = _connectionCount;
+                _connections.Add(state);
 
-            state.ClientSocket.BeginReceive(state.ClientBuffer, 0, state.ClientBuffer.Length, SocketFlags.None, new AsyncCallback(ConnectCallback), state);
+                state.ClientSocket.BeginReceive(state.ClientBuffer, 0, state.ClientBuffer.Length, SocketFlags.None, new AsyncCallback(ConnectCallback), state);
+            }
+            catch (ObjectDisposedException)
+            {
+                _logger.Warning("Accept callback attempted to perform operation on disposed listener after restart");
+            }
         }
 
         private static void ConnectCallback(IAsyncResult ar)
@@ -100,7 +133,7 @@ namespace GuacamoleSharp.Server
                 _logger.Warning("[Connection {Id}] Timeout", state.LastActivity);
 
                 Close(state);
-                _acceptDone.Set();
+                _connectDone.Set();
                 return;
             }
 
@@ -117,7 +150,7 @@ namespace GuacamoleSharp.Server
                     _logger.Warning("[Connection {Id}] Connection is missing the token query param", state.ConnectionId);
 
                     Close(state);
-                    _acceptDone.Set();
+                    _connectDone.Set();
                     return;
                 }
 
@@ -132,7 +165,7 @@ namespace GuacamoleSharp.Server
                     _logger.Warning("[Connection {Id}] Connection serialization returned null", state.ConnectionId);
 
                     Close(state);
-                    _acceptDone.Set();
+                    _connectDone.Set();
                     return;
                 }
 
@@ -155,7 +188,7 @@ namespace GuacamoleSharp.Server
                 _clientThread.DoWork += new DoWorkEventHandler(Receive_DoWork);
                 _clientThread.RunWorkerAsync(state);
 
-                _acceptDone.Set();
+                _connectDone.Set();
             }
             else
             {
@@ -168,14 +201,17 @@ namespace GuacamoleSharp.Server
             Socket listener = (Socket)e.Argument!;
             listener.Listen(10);
 
-            while (true)
+            while (!_listenerThread.CancellationPending)
             {
-                _acceptDone.Reset();
+                _connectDone.Reset();
 
                 listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
 
-                _acceptDone.WaitOne();
+                _connectDone.WaitOne();
             }
+
+            listener.Close();
+            _restartReady.Set();
         }
 
         private static void Receive_DoWork(object? sender, DoWorkEventArgs e)
@@ -186,7 +222,7 @@ namespace GuacamoleSharp.Server
 
             try
             {
-                while (!state.Closed)
+                while (!state.ClientClosed && !_listenerThread.CancellationPending)
                 {
                     state.ClientReceiveDone.Reset();
 
@@ -194,6 +230,10 @@ namespace GuacamoleSharp.Server
 
                     state.ClientReceiveDone.WaitOne();
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                _logger.Warning("[Connection {Id}] Receive callback attempted to perform operation on disposed listener after restart", state.ConnectionId);
             }
             catch (Exception ex)
             {
@@ -206,7 +246,7 @@ namespace GuacamoleSharp.Server
         {
             var state = (ConnectionState)ar.AsyncState!;
 
-            if (state.Closed)
+            if (state.ClientClosed)
             {
                 state.ClientReceiveDone.Set();
                 return;
@@ -222,11 +262,7 @@ namespace GuacamoleSharp.Server
             {
                 _logger.Warning("[Connection {Id}] Client socket tried to receive data from closed connection", state.ConnectionId);
 
-                if (!state.Closed)
-                {
-                    GSGuacdClient.Close(state);
-                }
-
+                GSGuacdClient.Close(state);
                 state.ClientReceiveDone.Set();
                 return;
             }
@@ -258,6 +294,13 @@ namespace GuacamoleSharp.Server
             (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
             state.ClientResponseOverflowBuffer.Remove(0, delimiterIndex);
 
+            if (message.Contains("10.disconnect;"))
+            {
+                GSGuacdClient.Close(state);
+                state.ClientReceiveDone.Set();
+                return;
+            }
+
             GSGuacdClient.Send(state, message);
 
             state.ClientReceiveDone.Set();
@@ -267,7 +310,7 @@ namespace GuacamoleSharp.Server
         {
             var state = (ConnectionState)ar.AsyncState!;
 
-            if (state.Closed)
+            if (state.ClientClosed)
             {
                 state.ClientSendDone.Set();
                 return;
@@ -281,11 +324,7 @@ namespace GuacamoleSharp.Server
             {
                 _logger.Warning("[Connection {Id}] Client socket tried to send data to closed connection", state.ConnectionId);
 
-                if (!state.Closed)
-                {
-                    GSGuacdClient.Close(state);
-                }
-
+                GSGuacdClient.Close(state);
                 state.ClientSendDone.Set();
                 return;
             }

@@ -24,12 +24,17 @@ namespace GuacamoleSharp.Server
         {
             try
             {
-                _logger.Information("[Connection {Id}] Closing guacd connection", state.ConnectionId);
-
-                if (state.GuacdSocket != null)
+                lock (state.DisposeLock)
                 {
-                    state.GuacdSocket.Shutdown(SocketShutdown.Both);
-                    state.GuacdSocket.Close();
+                    if (state.GuacdSocket != null && !state.GuacdClosed)
+                    {
+                        _logger.Information("[Connection {Id}] Closing guacd connection", state.ConnectionId);
+
+                        state.GuacdSocket.Shutdown(SocketShutdown.Both);
+                        state.GuacdSocket.Close();
+                    }
+
+                    state.GuacdClosed = true;
                 }
             }
             catch (Exception ex)
@@ -61,7 +66,7 @@ namespace GuacamoleSharp.Server
                 try
                 {
                     address = Dns.GetHostAddresses(gssettings.Guacd.Hostname).FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork)
-                        ?? throw new ArgumentNullException(nameof(address));
+                        ?? throw new ArgumentException(nameof(address));
                 }
                 catch (Exception)
                 {
@@ -159,7 +164,7 @@ namespace GuacamoleSharp.Server
 
             try
             {
-                while (!state.Closed)
+                while (!state.GuacdClosed)
                 {
                     state.GuacdReceiveDone.Reset();
 
@@ -179,7 +184,7 @@ namespace GuacamoleSharp.Server
         {
             var state = (ConnectionState)ar.AsyncState!;
 
-            if (state.Closed)
+            if (state.GuacdClosed)
             {
                 state.GuacdReceiveDone.Set();
                 return;
@@ -195,11 +200,7 @@ namespace GuacamoleSharp.Server
             {
                 _logger.Warning("[Connection {Id}] Guacd socket tried to receive data from closed connection", state.ConnectionId);
 
-                if (!state.Closed)
-                {
-                    Close(state);
-                }
-
+                Close(state);
                 state.GuacdReceiveDone.Set();
                 return;
             }
@@ -231,6 +232,13 @@ namespace GuacamoleSharp.Server
             (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
             state.GuacdResponseOverflowBuffer.Remove(0, delimiterIndex);
 
+            if (message.Contains("10.disconnect;"))
+            {
+                Close(state);
+                state.GuacdReceiveDone.Set();
+                return;
+            }
+
             GSListener.Send(state, message);
 
             state.GuacdReceiveDone.Set();
@@ -240,7 +248,7 @@ namespace GuacamoleSharp.Server
         {
             var state = (ConnectionState)ar.AsyncState!;
 
-            if (state.Closed)
+            if (state.GuacdClosed)
             {
                 state.GuacdSendDone.Set();
                 return;
@@ -254,11 +262,7 @@ namespace GuacamoleSharp.Server
             {
                 _logger.Warning("[Connection {Id}] Guacd socket tried to send data to closed connection", state.ConnectionId);
 
-                if (!state.Closed)
-                {
-                    Close(state);
-                }
-
+                Close(state);
                 state.GuacdSendDone.Set();
                 return;
             }

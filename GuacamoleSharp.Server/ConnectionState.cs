@@ -10,6 +10,8 @@ namespace GuacamoleSharp.Server
 
         public byte[] ClientBuffer { get; } = new byte[1024];
 
+        public bool ClientClosed { get; internal set; } = false;
+
         public ManualResetEvent ClientHandshakeDone { get; internal set; } = new(false);
 
         public ManualResetEvent ClientReceiveDone { get; internal set; } = new(false);
@@ -20,13 +22,15 @@ namespace GuacamoleSharp.Server
 
         public Socket ClientSocket { get; internal set; } = null!;
 
-        public bool Closed { get; internal set; } = false;
-
         public Connection Connection { get; internal set; } = null!;
 
         public ulong ConnectionId { get; internal set; }
 
+        public object DisposeLock { get; } = new();
+
         public byte[] GuacdBuffer { get; } = new byte[1024];
+
+        public bool GuacdClosed { get; internal set; } = false;
 
         public ManualResetEvent GuacdHandshakeDone { get; } = new(false);
 
