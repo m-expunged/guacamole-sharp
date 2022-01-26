@@ -7,23 +7,29 @@ Like the official Java guacamole-client, GuacamoleSharp makes use of the guacamo
 
 Inspired by Vadim Pronin's [guacamole-lite](https://github.com/vadimpronin/guacamole-lite).
 
-# Usage
+## Usage
 
 While not strictly required, the intended use of GuacamoleSharp is with Docker.
 
 Docker setup steps:
 
 - Clone repository
-- Adjust appsettings.json (explanation below)
-- In Dockerfile, overwrite appsettings.json as needed with environment variables (see Dockerfile for example)
-- Adjust docker-compose.yml as needed
-- In root directory of the project, use 'docker compose up' to generate images and start containers
-- Generate connection token with settings (explanation below)
-- Connect to GuacamoleSharp with your self-built frontend using guacamole-common-js (explanation below)
+- Adjust appsettings.json
+  - Change logging level
+  - Change GSSettings
+- Adjust Docker
+  - Change ports and hostnames
+  - Overwrite GSSettings in appsettings.json with environment variables in Dockerfile (example in Dockerfile)
+  - For some Linux systems, you will need to switch to a Linux compatible image of guacd in docker-compose.yml
+- In root directory of the project, use 'docker compose up -d' to generate images and start containers
+- Generate connection token with Web API endpoint
+- Connect to GuacamoleSharp with your self-built frontend using guacamole-common-js
+
+Details regarding some of the steps are can be found below.
 
 For usage without Docker, skip the Docker steps and build the application like any other.
 
-# Connection Token
+## Connection Token
 
 GuacamoleSharp transports the settings for remote connections via an encrypted connection token.
 
@@ -78,11 +84,11 @@ curl -X 'POST' \
 
 If you start the application via Visual Studio in Debug mode, you can use Swagger to easily make the request.
 
-# Appsettings.json
+## appsettings.json
 
 In order to simplify the configuration of connections, you can specify default and unencrypted settings for different connection types inside the appsettings.json.
 
-## Default Guacd, WebSocket server and Token settings
+### Default Guacd, WebSocket server and token settings
 
 By default, the GuacamoleSharp WebSocket server listens on port 8080 and tries to connect to guacd on port 4822.
 
@@ -106,7 +112,7 @@ This is the same key you send to the Web API to generate the token.
 },
 ```
 
-## Default connection settings
+### Default connection settings
 
 Since many connection settings will be the same across different connections, it might be convenient to define them as default values.
 
@@ -150,7 +156,7 @@ The properties inside 'DefaultConnectionSettings' are <strong>required to be in 
 }
 ```
 
-## Unencrypted connection settings
+### Unencrypted connection settings
 
 While most settings for connections should be packed into the encrypted token string, there is also the option to send certain settings as an unencrypted query parameter.
 
@@ -181,14 +187,14 @@ connectionString += "&height=768";
 client.connect(connectionString);
 ```
 
-## Settings overwrite priority
+### Settings overwrite priority
 
 If a guacamole-protocol argument is defined multiple times, it will be overwritten by the setting with the highest priority.
 The order of priority is as follows (from lowest to highest):
 
 Default values < Token string values < Unencrypted values
 
-# guacamole-common-js
+## guacamole-common-js
 
 In order to use GuacamoleSharp, you will need to use the guacamole-common-js library in your frontend. You can find a detailed explanation in the Apache Guacamole Docs.
 
