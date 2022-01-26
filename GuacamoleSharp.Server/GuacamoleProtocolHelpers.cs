@@ -23,30 +23,27 @@ namespace GuacamoleSharp.Server
 
         internal static string?[] BuildHandshakeReply(Settings settings, string handshake)
         {
-            var handshakeAttributes = handshake.Split(',');
+            string[] args = handshake.Split(',');
 
-            List<string?> replyAttributes = new();
-
-            foreach (var attr in handshakeAttributes)
+            for (int i = 0; i < args.Length; i++)
             {
-                int attrDelimiter = attr.IndexOf('.') + 1;
-                string settingKey = attr[attrDelimiter..];
-                replyAttributes.Add(settings[settingKey]);
+                string arg = args[i];
+                string argKey = arg[(arg.IndexOf('.') + 1)..];
+                args[i] = settings[argKey]!;
             }
 
-            return replyAttributes.ToArray();
+            return args;
         }
 
         internal static string BuildProtocol(params string?[] args)
         {
-            List<string> parts = new();
             for (int i = 0; i < args.Length; i++)
             {
                 var arg = args[i] ?? string.Empty;
-                parts.Add($"{arg.Length}.{arg}");
+                args[i] = $"{arg.Length}.{arg}";
             }
 
-            return string.Join(',', parts) + ";";
+            return string.Join(',', args) + ";";
         }
 
         internal static void OverwriteConnectionWithUnencryptedConnectionSettings(Connection connection, NameValueCollection query, Dictionary<string, List<string>> connectionAllowedUnencryptedSettings)

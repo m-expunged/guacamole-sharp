@@ -54,9 +54,10 @@ namespace GuacamoleSharp.Server
 
         internal static string ReadFromFrames(byte[] payload, int receivedLength)
         {
-            List<WebSocketFrameDimensions> frames = SplitFrames(payload, receivedLength, new());
+            List<WebSocketFrameDimensions> frames = new();
+            frames.AddRangeOfFrames(payload, receivedLength);
 
-            string message = string.Empty;
+            var message = new StringBuilder();
             int payloadStartIndex = 0;
 
             foreach (var frame in frames)
@@ -78,10 +79,10 @@ namespace GuacamoleSharp.Server
                 }
 
                 payloadStartIndex += frame.FrameLength;
-                message += Encoding.UTF8.GetString(decoded);
+                message.Append(Encoding.UTF8.GetString(decoded));
             }
 
-            return message;
+            return message.ToString();
         }
 
         internal static byte[] WriteToFrame(string message)
@@ -138,7 +139,7 @@ namespace GuacamoleSharp.Server
 
         #region Private Methods
 
-        private static List<WebSocketFrameDimensions> SplitFrames(byte[] payload, int receivedLength, List<WebSocketFrameDimensions> frames)
+        private static List<WebSocketFrameDimensions> AddRangeOfFrames(this List<WebSocketFrameDimensions> frames, byte[] payload, int receivedLength)
         {
             int frameStartIndex = frames.Any() ? frames.Sum(x => x.FrameLength) : 0;
             int dataLength = payload[frameStartIndex..][1] & 127;
@@ -169,7 +170,7 @@ namespace GuacamoleSharp.Server
 
             if (receivedLength > frames.Sum(x => x.FrameLength))
             {
-                SplitFrames(payload, receivedLength, frames);
+                frames.AddRangeOfFrames(payload, receivedLength);
             }
 
             return frames;
