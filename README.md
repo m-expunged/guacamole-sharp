@@ -68,7 +68,7 @@ And a connection object in the request body:
 
 Curl example:
 
-```
+```bash
 curl -X 'POST' \
  'http://localhost:5072/api/Token/MySuperSecretCipherKey' \
  -H 'accept: text/plain' \
@@ -118,7 +118,7 @@ Since many connection settings will be the same across different connections, it
 
 Any valid guacamole-protocol argument can be used. The most common settings are already preconfigured and will work out-of-the-box. You might want to change 'width' and 'height' to your preferred resolution.
 
-The properties inside 'DefaultConnectionSettings' are <strong>required to be in lowercase<strong> unless the guacamole-protocol specifies them otherwise.
+The properties inside 'DefaultConnectionSettings' are **required to be in lowercase** unless the guacamole-protocol specifies them otherwise.
 
 ```json
 "Client": {
@@ -162,7 +162,7 @@ While most settings for connections should be packed into the encrypted token st
 
 All valid guacamole-protocol arguments can used in their unencrypted form, with the exception of the connection type (ssh/rdp/...) which is the only strictly required argument inside the connection token.
 
-The properties inside 'UnencryptedConnectionSettings' are <strong>required to be in lowercase<strong> unless the guacamole-protocol specifies them otherwise.
+The properties inside 'UnencryptedConnectionSettings' are **required to be in lowercase** unless the guacamole-protocol specifies them otherwise.
 
 ```json
 "UnencryptedConnectionSettings": {
