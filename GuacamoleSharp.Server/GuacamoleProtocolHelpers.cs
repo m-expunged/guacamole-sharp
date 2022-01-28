@@ -37,13 +37,15 @@ namespace GuacamoleSharp.Server
 
         internal static string BuildProtocol(params string?[] args)
         {
+            string[] result = new string[args.Length];
+
             for (int i = 0; i < args.Length; i++)
             {
                 var arg = args[i] ?? string.Empty;
-                args[i] = $"{arg.Length}.{arg}";
+                result[i] = $"{arg.Length}.{arg}";
             }
 
-            return string.Join(',', args) + ";";
+            return string.Join(',', result) + ";";
         }
 
         internal static void OverwriteConnectionWithUnencryptedConnectionSettings(Connection connection, NameValueCollection query, Dictionary<string, List<string>> connectionAllowedUnencryptedSettings)

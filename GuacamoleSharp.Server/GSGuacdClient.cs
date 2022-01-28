@@ -196,7 +196,7 @@ namespace GuacamoleSharp.Server
             {
                 receivedLength = state.GuacdSocket.EndReceive(ar);
             }
-            catch (Exception)
+            catch (ObjectDisposedException)
             {
                 _logger.Warning("[Connection {Id}] Guacd socket tried to receive data from closed connection", state.ConnectionId);
 
