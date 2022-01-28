@@ -258,7 +258,7 @@ namespace GuacamoleSharp.Server
             {
                 receivedLength = state.Client.Socket.EndReceive(ar);
             }
-            catch (Exception)
+            catch (ObjectDisposedException)
             {
                 _logger.Warning("[Connection {Id}] Client socket tried to receive data from closed connection", state.ConnectionId);
 
@@ -320,7 +320,7 @@ namespace GuacamoleSharp.Server
             {
                 state.Client.Socket.EndSend(ar);
             }
-            catch (Exception)
+            catch (ObjectDisposedException)
             {
                 _logger.Warning("[Connection {Id}] Client socket tried to send data to closed connection", state.ConnectionId);
 

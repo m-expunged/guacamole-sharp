@@ -258,7 +258,7 @@ namespace GuacamoleSharp.Server
             {
                 state.Guacd.Socket.EndSend(ar);
             }
-            catch (Exception)
+            catch (ObjectDisposedException)
             {
                 _logger.Warning("[Connection {Id}] Guacd socket tried to send data to closed connection", state.ConnectionId);
 

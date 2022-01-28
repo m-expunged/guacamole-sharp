@@ -8,15 +8,15 @@ namespace GuacamoleSharp.Server
 
         public SocketState Client { get; } = new();
 
-        public Connection Connection { get; internal set; } = null!;
+        public Connection Connection { get; set; } = null!;
 
-        public ulong ConnectionId { get; internal set; }
+        public ulong ConnectionId { get; set; }
 
         public object DisposeLock { get; } = new();
 
         public SocketState Guacd { get; } = new();
 
-        public DateTime LastActivity { get; internal set; } = DateTime.Now;
+        public DateTime LastActivity { get; set; } = DateTime.Now;
 
         #endregion Public Properties
     }
