@@ -190,6 +190,19 @@ The order of priority is as follows (from lowest to highest):
 
 Default values < Token string values < Unencrypted values
 
+### Settings default values
+
+Some settings have default values and can be left empty in appsettings.json/Dockerfile:
+
+```c#
+GSSettings:Guacd:Hostname = 127.0.0.1
+GSSettings:Guacd:Port = 4822
+GSSettings:WebSocket:MaxInactivityAllowedInMin = 10
+GSSettings:Guacd:Port = 8080
+```
+
+The WebSocker server will always listen on all network interfaces for client activity.
+
 ## guacamole-common-js
 
 In order to use GuacamoleSharp, you will need to use the guacamole-common-js library in your frontend. You can find a detailed explanation in the Apache Guacamole Docs.
