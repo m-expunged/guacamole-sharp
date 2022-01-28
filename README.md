@@ -108,6 +108,8 @@ This is the same key you send to the Web API to generate the token.
 },
 ```
 
+**The WebSocker server will always listen on all network interfaces for client activity, only the port can be changed.**
+
 ### Default connection settings
 
 Since many connection settings will be the same across different connections, it might be convenient to define them as default values.
@@ -183,16 +185,9 @@ connectionString += "&height=768";
 client.connect(connectionString);
 ```
 
-### Settings overwrite priority
+### Settings fallback values
 
-If a guacamole-protocol argument is defined multiple times, it will be overwritten by the setting with the highest priority.
-The order of priority is as follows (from lowest to highest):
-
-Default values < Token string values < Unencrypted values
-
-### Settings default values
-
-Some settings have default values and can be left empty in appsettings.json/Dockerfile:
+Some settings have fallback values and can be left empty in appsettings.json/Dockerfile:
 
 ```c#
 GSSettings:Guacd:Hostname = 127.0.0.1
@@ -201,7 +196,12 @@ GSSettings:WebSocket:MaxInactivityAllowedInMin = 10
 GSSettings:Guacd:Port = 8080
 ```
 
-The WebSocker server will always listen on all network interfaces for client activity.
+### Settings overwrite priority
+
+If a guacamole-protocol argument is defined multiple times, it will be overwritten by the setting with the highest priority.
+The order of priority is as follows (from lowest to highest):
+
+Default values < Token string values < Unencrypted values < Fallback values
 
 ## guacamole-common-js
 
