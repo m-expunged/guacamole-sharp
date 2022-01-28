@@ -14,7 +14,7 @@ namespace GuacamoleSharp.API.Extensions
             {
                 options.AddDefaultPolicy(builder => builder
                     .AllowAnyOrigin()
-                    .WithMethods("POST")
+                    .WithMethods("POST", "GET")
                     .AllowAnyHeader());
             });
         }
