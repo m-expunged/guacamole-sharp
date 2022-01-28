@@ -193,7 +193,7 @@ Some settings have fallback values and can be left empty in appsettings.json/Doc
 GSSettings:Guacd:Hostname = 127.0.0.1
 GSSettings:Guacd:Port = 4822
 GSSettings:WebSocket:MaxInactivityAllowedInMin = 10
-GSSettings:Guacd:Port = 8080
+GSSettings:WebSocket:Port = 8080
 ```
 
 ### Settings overwrite priority
