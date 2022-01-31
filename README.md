@@ -25,7 +25,7 @@ Docker setup steps:
 - Generate connection token with Web API endpoint
 - Connect to GuacamoleSharp with your self-built frontend using guacamole-common-js
 
-Details regarding some of the steps are can be found below.
+Details regarding some of the steps are below.
 
 For usage without Docker, skip the Docker steps and build the application like any other.
 
