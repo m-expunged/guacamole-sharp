@@ -199,9 +199,9 @@ GSSettings:WebSocket:Port = 8080
 ### Settings overwrite priority
 
 If a guacamole-protocol argument is defined multiple times, it will be overwritten by the setting with the highest priority.
-The order of priority is as follows (from lowest to highest):
+The order of priority is as follows (from highest to lowest):
 
-Default values < Token string values < Unencrypted values < Fallback values
+Unencrypted values > Token string values > Default values > Fallback values
 
 ## guacamole-common-js
 
