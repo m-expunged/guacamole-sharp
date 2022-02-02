@@ -108,7 +108,7 @@ This is the same key you send to the Web API to generate the token.
 },
 ```
 
-**The WebSocker server will always listen on all network interfaces for client activity, only the port can be changed.**
+**The WebSocket server will always listen on all network interfaces for client activity, only the port can be changed.**
 
 ### Default connection settings
 
@@ -158,7 +158,7 @@ The properties inside 'DefaultConnectionSettings' are **required to be in lowerc
 
 While most settings for connections should be packed into the encrypted token string, there is also the option to send certain settings as an unencrypted query parameter.
 
-All valid guacamole-protocol arguments can used in their unencrypted form, with the exception of the connection type (ssh/rdp/...) which is the only strictly required argument inside the connection token.
+All valid guacamole-protocol arguments can used in their unencrypted form, except for the connection type (ssh/rdp/...) which is the only strictly required argument inside the connection token.
 
 The properties inside 'UnencryptedConnectionSettings' are **required to be in lowercase** unless the guacamole-protocol specifies them otherwise.
 
