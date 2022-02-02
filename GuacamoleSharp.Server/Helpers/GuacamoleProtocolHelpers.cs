@@ -74,12 +74,12 @@ namespace GuacamoleSharp.Server
             }
         }
 
-        internal static (string content, int index) ReadProtocolUntilLastDelimiter(string content)
+        internal static (string? content, int index) ReadProtocolUntilLastDelimiter(string content)
         {
             int index = content.LastIndexOf(';');
 
             if (index == -1)
-                return (string.Empty, index);
+                return (null, index);
 
             if (content.Length - 1 == index)
                 return (content, content.Length);

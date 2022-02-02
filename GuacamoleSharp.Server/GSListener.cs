@@ -283,15 +283,15 @@ namespace GuacamoleSharp.Server
             }
 
             state.Client.OverflowBuffer.Append(WebSocketHelpers.ReadFromFrames(state.Client.Buffer[0..receivedLength], receivedLength));
-            string reponse = state.Client.OverflowBuffer.ToString();
+            string response = state.Client.OverflowBuffer.ToString();
+            (string? message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(response);
 
-            if (!reponse.Contains(';'))
+            if (message == null)
             {
                 state.Client.Socket.BeginReceive(state.Client.Buffer, 0, state.Client.Buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
                 return;
             }
 
-            (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
             state.Client.OverflowBuffer.Remove(0, delimiterIndex);
 
             if (message.Contains("10.disconnect;"))

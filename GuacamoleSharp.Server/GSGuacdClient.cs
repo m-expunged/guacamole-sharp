@@ -128,15 +128,15 @@ namespace GuacamoleSharp.Server
             }
 
             state.Guacd.OverflowBuffer.Append(Encoding.UTF8.GetString(state.Guacd.Buffer[0..receivedLength]));
-            string reponse = state.Guacd.OverflowBuffer.ToString();
+            string response = state.Guacd.OverflowBuffer.ToString();
+            (string? handshake, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(response);
 
-            if (!reponse.Contains(';'))
+            if (handshake == null)
             {
                 state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, SocketFlags.None, new AsyncCallback(HandshakeCallback), state);
                 return;
             }
 
-            (string handshake, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
             state.Guacd.OverflowBuffer.Remove(0, delimiterIndex);
             var handshakeReply = GuacamoleProtocolHelpers.BuildHandshakeReply(state.Connection.Settings, handshake);
 
@@ -222,14 +222,14 @@ namespace GuacamoleSharp.Server
 
             state.Guacd.OverflowBuffer.Append(Encoding.UTF8.GetString(state.Guacd.Buffer[0..receivedLength]));
             string reponse = state.Guacd.OverflowBuffer.ToString();
+            (string? message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
 
-            if (!reponse.Contains(';'))
+            if (message == null)
             {
                 state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
                 return;
             }
 
-            (string message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(reponse);
             state.Guacd.OverflowBuffer.Remove(0, delimiterIndex);
 
             if (message.Contains("10.disconnect;"))

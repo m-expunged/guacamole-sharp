@@ -52,10 +52,10 @@ namespace GuacamoleSharp.Server
             return query;
         }
 
-        internal static string ReadFromFrames(byte[] payload, int receivedLength)
+        internal static string ReadFromFrames(byte[] payload, int size)
         {
             List<WebSocketFrameDimensions> frames = new();
-            frames.AddRangeOfFrames(payload, receivedLength);
+            frames.AddRangeOfFrames(payload, 0, size);
 
             var message = new StringBuilder();
             int payloadStartIndex = 0;
@@ -68,8 +68,8 @@ namespace GuacamoleSharp.Server
                     continue;
                 }
 
-                var framePayload = payload[payloadStartIndex..(payloadStartIndex + frame.FrameLength)];
-                var masks = framePayload[frame.MaskIndex..(frame.MaskIndex + 4)];
+                byte[] framePayload = payload[payloadStartIndex..(payloadStartIndex + frame.FrameLength)];
+                byte[] masks = framePayload[frame.MaskIndex..(frame.MaskIndex + 4)];
                 int firstDataByteIndex = frame.MaskIndex + 4;
                 byte[] decoded = new byte[framePayload.Length - firstDataByteIndex];
 
@@ -139,10 +139,9 @@ namespace GuacamoleSharp.Server
 
         #region Private Methods
 
-        private static List<WebSocketFrameDimensions> AddRangeOfFrames(this List<WebSocketFrameDimensions> frames, byte[] payload, int receivedLength)
+        private static List<WebSocketFrameDimensions> AddRangeOfFrames(this List<WebSocketFrameDimensions> frames, byte[] payload, int offset, int size)
         {
-            int frameStartIndex = frames.Any() ? frames.Sum(x => x.FrameLength) : 0;
-            int dataLength = payload[frameStartIndex..][1] & 127;
+            int dataLength = payload[offset..][1] & 127;
             int maskIndex;
             int frameLength;
 
@@ -168,9 +167,10 @@ namespace GuacamoleSharp.Server
 
             frames.Add(new WebSocketFrameDimensions { FrameLength = frameLength, DataLength = dataLength, MaskIndex = maskIndex });
 
-            if (receivedLength > frames.Sum(x => x.FrameLength))
+            int nextOffset = frames.Sum(x => x.FrameLength);
+            if (size > nextOffset)
             {
-                frames.AddRangeOfFrames(payload, receivedLength);
+                frames.AddRangeOfFrames(payload, nextOffset, size);
             }
 
             return frames;
