@@ -120,7 +120,7 @@ namespace GuacamoleSharp.Server
             }
             catch (ObjectDisposedException)
             {
-                _logger.Warning("Accept callback attempted to perform operation on disposed listener after restart");
+                _logger.Warning("Accept callback attempted to perform operation on disposed listener");
             }
         }
 
@@ -233,7 +233,7 @@ namespace GuacamoleSharp.Server
             }
             catch (ObjectDisposedException)
             {
-                _logger.Warning("[Connection {Id}] Receive callback attempted to perform operation on disposed listener after restart", state.ConnectionId);
+                _logger.Warning("[Connection {Id}] Receive callback attempted to perform operation on disposed listener", state.ConnectionId);
             }
             catch (Exception ex)
             {
@@ -260,7 +260,7 @@ namespace GuacamoleSharp.Server
             }
             catch (ObjectDisposedException)
             {
-                _logger.Warning("[Connection {Id}] Client socket tried to receive data from closed connection", state.ConnectionId);
+                _logger.Warning("[Connection {Id}] Client socket tried to receive data from disposed connection", state.ConnectionId);
 
                 GSGuacdClient.Close(state);
                 state.Client.ReceiveDone.Set();
@@ -322,7 +322,7 @@ namespace GuacamoleSharp.Server
             }
             catch (ObjectDisposedException)
             {
-                _logger.Warning("[Connection {Id}] Client socket tried to send data to closed connection", state.ConnectionId);
+                _logger.Warning("[Connection {Id}] Client socket tried to send data to disposed connection", state.ConnectionId);
 
                 GSGuacdClient.Close(state);
                 state.Client.SendDone.Set();

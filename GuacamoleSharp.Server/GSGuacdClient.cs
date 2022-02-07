@@ -52,7 +52,7 @@ namespace GuacamoleSharp.Server
             if (_gssettings == null)
                 _gssettings = gssettings;
 
-            _logger.Information("[Connection {Id}] Attemping connection to guacd proxy at: {Hostname}:{Port}", state.ConnectionId, gssettings.Guacd.Hostname, gssettings.Guacd.Port);
+            _logger.Information("[Connection {Id}] Attempting connection to guacd proxy at: {Hostname}:{Port}", state.ConnectionId, gssettings.Guacd.Hostname, gssettings.Guacd.Port);
             _logger.Debug("[Connection {Id}] Connection settings: {@connection}", state.ConnectionId, connection);
 
             if (IPAddress.TryParse(gssettings.Guacd.Hostname, out IPAddress? address))
@@ -198,7 +198,7 @@ namespace GuacamoleSharp.Server
             }
             catch (ObjectDisposedException)
             {
-                _logger.Warning("[Connection {Id}] Guacd socket tried to receive data from closed connection", state.ConnectionId);
+                _logger.Warning("[Connection {Id}] Guacd socket tried to receive data from disposed connection", state.ConnectionId);
 
                 Close(state);
                 state.Guacd.ReceiveDone.Set();
@@ -260,7 +260,7 @@ namespace GuacamoleSharp.Server
             }
             catch (ObjectDisposedException)
             {
-                _logger.Warning("[Connection {Id}] Guacd socket tried to send data to closed connection", state.ConnectionId);
+                _logger.Warning("[Connection {Id}] Guacd socket tried to send data to disposed connection", state.ConnectionId);
 
                 Close(state);
                 state.Guacd.SendDone.Set();
