@@ -31,7 +31,7 @@ docker run --name guacd
 -d guacamole/guacd
 ```
 
-- manuelexpunged/guacamolesharp
+- [manuelexpunged/guacamolesharp](https://hub.docker.com/r/manuelexpunged/guacamolesharp/tags)
 
 ```bash
 docker run --name guacamolesharp
