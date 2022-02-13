@@ -83,6 +83,8 @@ curl -X 'POST' \
 }'
 ```
 
+Connection object example:
+
 ```json
 {
   "settings": {
