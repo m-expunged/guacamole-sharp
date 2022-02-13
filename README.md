@@ -106,7 +106,7 @@ As you can see, the request requires two things:
 
 The token encryption password is defined while creating the Docker container (alternatively inside the appsettings.json).
 
-The connection object contains all parameters guacd needs to create a connection. **Type** decides the type of connection (ssh, vnc, rdp, ...) and **settings** is used to configure the connection and pass username and password. [The Apache Guacamole documentation](https://guacamole.incubator.apache.org/doc/gug/configuring-guacamole.html#connection-configuration) contains a full list of settings and their meaning
+The connection object contains all parameters guacd needs to create a connection. **Type** decides the type of connection (ssh, vnc, rdp, ...) and **settings** is used to configure the connection and pass username and password of the machine you want to connect to. [The Apache Guacamole documentation](https://guacamole.incubator.apache.org/doc/gug/configuring-guacamole.html#connection-configuration) contains a full list of settings and their meaning
 
 ### guacamole-common-js
 
