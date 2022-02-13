@@ -8,7 +8,7 @@
 
         public Guacd Guacd { get; set; } = new();
 
-        public Token Token { get; set; } = new();
+        public string Password { get; set; } = null!;
 
         public WebSocket WebSocket { get; set; } = new();
 

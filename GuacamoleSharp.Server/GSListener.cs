@@ -154,7 +154,7 @@ namespace GuacamoleSharp.Server
                     return;
                 }
 
-                var painText = TokenEncrypter.DecryptString(_gssettings.Token.Password, token);
+                var painText = TokenEncrypter.DecryptString(_gssettings.Password, token);
                 var connection = JsonSerializer.Deserialize<Connection>(painText, new JsonSerializerOptions()
                 {
                     PropertyNameCaseInsensitive = true
@@ -237,7 +237,7 @@ namespace GuacamoleSharp.Server
             }
             catch (Exception ex)
             {
-                _logger.Error("[Connection {Id}] Errow while running socket listener thread: {ex}", state.ConnectionId, ex);
+                _logger.Error("[Connection {Id}] Error while running socket listener thread: {ex}", state.ConnectionId, ex);
                 GSGuacdClient.Close(state);
             }
         }

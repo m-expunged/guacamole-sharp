@@ -3,7 +3,7 @@ version: '3.9'
 services:
 
   guacd:
-    #For Linux: image: lscr.io/linuxserver/guacd
+    #if linux OS is not compatible with regular guacd image: lscr.io/linuxserver/guacd
     image: guacamole/guacd
     container_name: guacd
     restart: always
@@ -14,13 +14,15 @@ services:
 
   guacamolesharp:
     container_name: guacamolesharp
-    image: guacamolesharp
-    build:
-      context: .
+    image: manuelexpunged/guacamolesharp:latest
     depends_on:
       guacd:
         condition: service_started
     restart: always
+    environment:
+      - GuacamoleSharp:Password=YourTokenEncryptionPasswordHere
+      - GuacamoleSharp:Guacd:Hostname=guacd
+      - GuacamoleSharp:Guacd:Port=4822
     ports:
       - '80:80/tcp'
       - '8080:8080/tcp'

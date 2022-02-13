@@ -27,10 +27,10 @@ namespace GuacamoleSharp.API.Controllers
 
         #region Public Methods
 
-        [HttpPost("token/{key}")]
-        public ActionResult<string> GenerateToken([Required] string key, [FromBody] Connection connection)
+        [HttpPost("token/{password}")]
+        public ActionResult<string> GenerateToken([Required] string password, [FromBody] Connection connection)
         {
-            string token = TokenEncrypter.EncryptString(key, JsonSerializer.Serialize(connection));
+            string token = TokenEncrypter.EncryptString(password, JsonSerializer.Serialize(connection));
             return Ok(token);
         }
 

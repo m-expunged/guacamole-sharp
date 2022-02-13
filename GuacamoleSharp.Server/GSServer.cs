@@ -18,7 +18,7 @@ namespace GuacamoleSharp.Server
         public GSServer(ILogger<GSServer> logger, IOptions<GSSettings> gssettings)
         {
             _logger = logger;
-            _gssettings = gssettings.Value ?? throw new ArgumentException("Guacamole options could not be parsed from appsettings", nameof(gssettings));
+            _gssettings = gssettings.Value ?? throw new ArgumentException("Guacamole settings could not be parsed from appsettings", nameof(gssettings));
         }
 
         #endregion Public Constructors
@@ -32,7 +32,7 @@ namespace GuacamoleSharp.Server
 
         public void Start()
         {
-            _logger.LogInformation("Starting guacamole sharp websocket server...");
+            _logger.LogInformation("Starting guacamole-sharp websocket server...");
 
             GSListener.StartListening(_gssettings);
         }

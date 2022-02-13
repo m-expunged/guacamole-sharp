@@ -28,7 +28,7 @@ namespace GuacamoleSharp.API.Extensions
                     .ReadFrom.Services(services);
             });
 
-            builder.Services.Configure<GSSettings>(options => builder.Configuration.GetSection(nameof(GSSettings)).Bind(options));
+            builder.Services.Configure<GSSettings>(options => builder.Configuration.GetSection("GuacamoleSharp").Bind(options));
             builder.Services.AddSingleton<GSServer>();
         }
 
