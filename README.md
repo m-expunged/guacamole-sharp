@@ -44,6 +44,8 @@ docker run --name guacamolesharp
 -d manuelexpunged/guacamolesharp:latest
 ```
 
+Debug logging can be enabled with ```-e Serilog:MinimumLevel:Default=Debug```. This **will impact performance negativly** because of the amount of log messages generated.
+
 A docker compose example is included in the repository.
 
 ### The connection token
