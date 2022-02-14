@@ -118,8 +118,6 @@ Also, pay attention to the z-index, height and width of the guacamole-common-js 
 
 If you want to include your own examples or notice something that could have been done better feel free to open a pull request.
 
----
-
 ## Advanced usage
 
 ## appsettings.json
