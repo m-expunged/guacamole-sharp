@@ -154,11 +154,24 @@ namespace GuacamoleSharp.Server
                     return;
                 }
 
-                var painText = TokenEncrypter.DecryptString(_gssettings.Password, token);
-                var connection = JsonSerializer.Deserialize<Connection>(painText, new JsonSerializerOptions()
+                Connection? connection;
+
+                try
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    var plainText = TokenEncrypter.DecryptString(_gssettings.Password, token);
+                    connection = JsonSerializer.Deserialize<Connection>(plainText, new JsonSerializerOptions()
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+                catch (Exception)
+                {
+                    _logger.Error("[Connection {Id}] Invalid connection token", state.ConnectionId);
+
+                    Close(state);
+                    _connectDone.Set();
+                    return;
+                }
 
                 if (connection == null)
                 {
