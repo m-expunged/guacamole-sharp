@@ -189,11 +189,13 @@ The properties inside 'DefaultConnectionSettings' are generally **lowercase**.
 
 ### Unencrypted connection settings
 
-While most settings for connections should be packed into the encrypted token string, there is also the option to send certain settings as an unencrypted query parameter.
+While most settings for connections should be packed into the encrypted token string, there is also the option to send certain settings as an unencrypted query parameter by adding them to the unencrypted connection settings dictionary for their respective connection type.
 
-All valid guacamole-protocol arguments can used in their unencrypted form, except for the connection type (ssh/rdp/...) which is the only strictly required argument inside the connection token.
+All valid guacamole-protocol arguments can used in their unencrypted form, except for the connection type (ssh/rdp/...) which is the only argument that is required to be passed via the connection token.
 
 The properties inside 'UnencryptedConnectionSettings' are generally **lowercase**.
+
+By default, these settings can be sent unencrypted:
 
 ```json
 "UnencryptedConnectionSettings": {
