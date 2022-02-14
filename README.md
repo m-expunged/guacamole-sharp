@@ -11,6 +11,7 @@ Inspired by Vadim Pronin's [guacamole-lite](https://github.com/vadimpronin/guaca
 
 While not strictly required, the intended use of GuacamoleSharp is with Docker.
 
+
 ### Quick rundown
 
 - Run guacd docker container
@@ -18,6 +19,8 @@ While not strictly required, the intended use of GuacamoleSharp is with Docker.
 - Generate connection token
 - Send connection token to guacamolesharp via guacamole-common-js client
 - Display connection in your frontend
+
+![guacamole-sharp diagram](Assets/images/diagram.png?raw=true)
 
 ### Docker
 
