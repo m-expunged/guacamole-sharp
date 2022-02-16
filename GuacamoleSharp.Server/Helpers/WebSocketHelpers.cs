@@ -162,7 +162,7 @@ namespace GuacamoleSharp.Server
             }
             else
             {
-                throw new ArgumentOutOfRangeException("Unable to parse websocket frame length");
+                throw new ArgumentOutOfRangeException(nameof(dataLength), "Unable to parse websocket frame length");
             }
 
             frames.Add(new WebSocketFrameDimensions { FrameLength = frameLength, DataLength = dataLength, MaskIndex = maskIndex });
