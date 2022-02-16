@@ -295,7 +295,26 @@ namespace GuacamoleSharp.Server
                 return;
             }
 
-            state.Client.OverflowBuffer.Append(WebSocketHelpers.ReadFromFrames(state.Client.Buffer[0..receivedLength], receivedLength));
+            try
+            {
+                state.Client.OverflowBuffer.Append(WebSocketHelpers.ReadFromFrames(state.Client.Buffer[0..receivedLength], receivedLength));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                _logger.Warning("[Connection {Id}] WebSocket frame length could not be parsed. Skipping...", state.ConnectionId);
+
+                state.Client.ReceiveDone.Set();
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("[Connection {Id}] Unexpected error while parsing WebSocket frame: {ex}", state.ConnectionId, ex);
+
+                GSGuacdClient.Close(state);
+                state.Client.ReceiveDone.Set();
+                return;
+            }
+
             string response = state.Client.OverflowBuffer.ToString();
             (string? message, int delimiterIndex) = GuacamoleProtocolHelpers.ReadProtocolUntilLastDelimiter(response);
 
