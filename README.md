@@ -24,7 +24,7 @@ While not strictly required, the intended use of GuacamoleSharp is with Docker.
 
 ### Docker
 
-GuacamoleSharp requires two images to work:
+GuacamoleSharp requires two containers to work:
 
 - guacamole/guacd
 
@@ -106,7 +106,7 @@ Connection object example:
 }
 ```
 
-As you can see, the request requires two things:
+The request requires two things:
 
 - The token encryption password as query parameter
 - A connection object inside the request body
