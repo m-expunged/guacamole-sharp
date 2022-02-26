@@ -47,6 +47,8 @@ docker run --name guacamolesharp
 -d manuelexpunged/guacamolesharp:latest
 ```
 
+With the configuration above, the guacamolesharp container will listen for API calls on port 80 and for WebSocket connections on port 8080.
+
 Debug logging can be enabled with ```-e Serilog:MinimumLevel:Default=Debug```. This **will impact performance negativly** because of the amount of log messages generated.
 
 A docker compose example is included in the repository.
@@ -55,7 +57,7 @@ A docker compose example is included in the repository.
 
 GuacamoleSharp transports the settings for remote connections via an encrypted connection token. This is done to provide a bare minimum of protection against rogue connections without to much hassle for users. Ideally you should build additional authentication/authorization layers on top of the token.
 
-The token is used while calling the **connect** method of a guacamole-common-js client instance.
+The token is passed to the guacamole-common-js client instance as a parameter of the connect method.
 
 ```js
 let tunnel = new Guacamole.WebSocketTunnel('ws://localhost:8080');
@@ -121,11 +123,11 @@ A good way to get started is to look at the Angular example that is included in 
 
 Also, pay attention to the z-index, height and width of the guacamole-common-js display element and its parent/child elements, specifically the canvas elements. In some cases the lib creates them with weird values (e.g. z-index: -1) and you might need to change them after the element is added to the DOM.
 
-If you want to include your own examples or notice something that could have been done better feel free to open a pull request.
+If you want to include your own examples or notice something that could have been done better feel free to open a issue/pull request.
 
 ## Advanced usage
 
-## appsettings.json
+### appsettings.json
 
 In order to simplify the configuration of connections, you can specify default and unencrypted settings for different connection types inside the appsettings.json and build your own docker image from that.
 
