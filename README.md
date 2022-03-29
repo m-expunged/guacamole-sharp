@@ -15,9 +15,9 @@ While not strictly required, the intended use of guacamole-sharp is with Docker.
 ### Quick rundown
 
 - Run guacd docker container
-- Run guacamolesharp docker container
+- Run guacamole-sharp docker container
 - Generate connection token
-- Send connection token to guacamolesharp via guacamole-common-js client
+- Send connection token to guacamole-sharp via guacamole-common-js client
 - Display connection in your frontend
 
 ![guacamole-sharp diagram](Assets/images/diagram.png?raw=true)
@@ -47,7 +47,7 @@ docker run --name guacamolesharp
 -d manuelexpunged/guacamolesharp:latest
 ```
 
-With the configuration above, the guacamolesharp container will listen for API calls on port 80 and for WebSocket connections on port 8080.
+With the configuration above, the guacamole-sharp container will listen for API calls on port 80 and for WebSocket connections on port 8080.
 
 Debug logging can be enabled with ```-e Serilog:MinimumLevel:Default=Debug```. This **will impact performance negativly** because of the amount of log messages generated.
 
