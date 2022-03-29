@@ -1,15 +1,15 @@
-# GuacamoleSharp
+# guacamole-sharp
 
-GuacamoleSharp is a C# replacement of the Apache Guacamole server-side Java servlet.
+guacamole-sharp is a C# replacement of the Apache Guacamole server-side Java servlet.
 It is intended for customizable integration of Apache Guacamole into existing frontend projects with their own user and connection management.
 
-Like the official Java guacamole-client **guacamole-common**, GuacamoleSharp makes use of the guacamole-protocol and is intended to be used with **guacamole-common-js** (frontend client) and **guacd** (server-side proxy) by Apache. Check out the [Apache Guacamole Docs](https://guacamole.apache.org/doc/gug/) for detailed information.
+Like the official Java guacamole-client **guacamole-common**, guacamole-sharp makes use of the guacamole-protocol and is intended to be used with **guacamole-common-js** (frontend client) and **guacd** (server-side proxy) by Apache. Check out the [Apache Guacamole Docs](https://guacamole.apache.org/doc/gug/) for detailed information.
 
 Inspired by Vadim Pronin's [guacamole-lite](https://github.com/vadimpronin/guacamole-lite).
 
 ## Usage
 
-While not strictly required, the intended use of GuacamoleSharp is with Docker.
+While not strictly required, the intended use of guacamole-sharp is with Docker.
 
 
 ### Quick rundown
@@ -24,7 +24,7 @@ While not strictly required, the intended use of GuacamoleSharp is with Docker.
 
 ### Docker
 
-GuacamoleSharp requires two containers to work:
+guacamole-sharp requires two containers to work:
 
 - guacamole/guacd
 
@@ -55,7 +55,7 @@ A docker compose example is included in the repository.
 
 ### The connection token
 
-GuacamoleSharp transports the settings for remote connections via an encrypted connection token. This is done to provide a bare minimum of protection against rogue connections without to much hassle for users. Ideally you should build additional authentication/authorization layers on top of the token.
+guacamole-sharp transports the settings for remote connections via an encrypted connection token. This is done to provide a bare minimum of protection against rogue connections without to much hassle for users. Ideally you should build additional authentication/authorization layers on top of the token.
 
 The token is passed to the guacamole-common-js client instance as a parameter of the connect method.
 
@@ -68,7 +68,7 @@ client.connect(
 );
 ```
 
-To generate such a token, GuacamoleSharp exposes an endpoint.
+To generate such a token, guacamole-sharp exposes an endpoint.
 
 ```
 'HOSTNAME:PORT/guacamolesharp/token/TOKEN_ENCRYPTION_PASSWORD'
@@ -117,7 +117,7 @@ The connection object contains all parameters guacd needs to create a connection
 
 ### guacamole-common-js
 
-In order to use GuacamoleSharp, you will need to use the guacamole-common-js library in your frontend. You can find a detailed explanation in the Apache Guacamole Docs.
+In order to use guacamole-sharp, you will need to use the guacamole-common-js library in your frontend. You can find a detailed explanation in the Apache Guacamole Docs.
 
 A good way to get started is to look at the Angular example that is included in the repository, using the guacamole-common-js npm package. You might need to create a d.ts file if you are using Typescript in your project.
 
@@ -133,7 +133,7 @@ In order to simplify the configuration of connections, you can specify default a
 
 ### Default Guacd, WebSocket server and token settings
 
-By default, the GuacamoleSharp WebSocket server listens on port 8080 and tries to connect to guacd on port 4822. If you want to specify different default ports you can change them in the appsettings.json. Here you can also specify the token password if Docker isn't an option. Make sure the guacd port here is the same as the port of the actual guacd docker image!
+By default, the guacamole-sharp WebSocket server listens on port 8080 and tries to connect to guacd on port 4822. If you want to specify different default ports you can change them in the appsettings.json. Here you can also specify the token password if Docker isn't an option. Make sure the guacd port here is the same as the port of the actual guacd docker image!
 
 ```json
 "Password": "YourTokenEncryptionPasswordHere",
