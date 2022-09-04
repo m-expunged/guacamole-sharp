@@ -1,4 +1,3 @@
-
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
@@ -10,15 +9,15 @@ EXPOSE 8080/tcp
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 COPY . .
-RUN dotnet restore "GuacamoleSharp.API/GuacamoleSharp.API.csproj"
-WORKDIR "/src/GuacamoleSharp.API"
-RUN dotnet build "GuacamoleSharp.API.csproj" -c Release -o /app
+RUN dotnet restore "GuacamoleSharp.csproj"
+WORKDIR "/src/GuacamoleSharp"
+RUN dotnet build "GuacamoleSharp.csproj" -c Release -o /app
 
 FROM build AS publish
-WORKDIR "/src/GuacamoleSharp.API"
-RUN dotnet publish "GuacamoleSharp.API.csproj" -c Release -o /app
+WORKDIR "/src/GuacamoleSharp"
+RUN dotnet publish "GuacamoleSharp.csproj" -c Release -o /app
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "GuacamoleSharp.API.dll"]
+ENTRYPOINT ["dotnet", "GuacamoleSharp.dll"]
