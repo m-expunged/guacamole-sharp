@@ -1,11 +1,11 @@
 ﻿using GuacamoleSharp.Helpers;
-using GuacamoleSharp.Logic.State;
+using GuacamoleSharp.Logic.States;
 using Serilog;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace GuacamoleSharp.Logic
+namespace GuacamoleSharp.Logic.Sockets
 {
     public static class Guacd
     {
@@ -40,7 +40,7 @@ namespace GuacamoleSharp.Logic
         {
             state.Guacd.SendDone.Reset();
 
-            Log.Debug("[Connection {Id}] <W2G<<< {Message}", state.ConnectionId, message);
+            Log.Debug("[Connection {Id}] <C2G<<< {Message}", state.ConnectionId, message);
 
             byte[] data = Encoding.UTF8.GetBytes(message);
             state.Guacd.Socket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
@@ -91,7 +91,7 @@ namespace GuacamoleSharp.Logic
 
                 Send(state, ProtocolHelper.BuildProtocol("select", state.Connection.Type));
 
-                state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, SocketFlags.None, new AsyncCallback(HandshakeCallback), state);
+                state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, 0, new AsyncCallback(HandshakeCallback), state);
             }
             catch (Exception ex)
             {
@@ -108,7 +108,7 @@ namespace GuacamoleSharp.Logic
             {
                 var receivedLength = state.Guacd.Socket.EndReceive(ar);
 
-                if (state.Timeout) throw new Exception($"[Connection {state.ConnectionId}] Timeout.");
+                if (state.Timeout) throw new Exception($"Timeout.");
 
                 if (receivedLength <= 0)
                 {
@@ -126,7 +126,7 @@ namespace GuacamoleSharp.Logic
                     return;
                 }
 
-                Log.Information("[Connection {Id}] Attempting to resolve handshake: {Handshake}", state.ConnectionId, handshake);
+                Log.Debug("[Connection {Id}] Attempting to resolve handshake: {Handshake}", state.ConnectionId, handshake);
 
                 state.Guacd.OverflowBuffer.Remove(0, delimiterIndex);
                 var handshakeReply = ProtocolHelper.BuildHandshakeReply(state.Connection, handshake);
@@ -160,7 +160,7 @@ namespace GuacamoleSharp.Logic
                     {
                         state.Guacd.ReceiveDone.Reset();
 
-                        state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
+                        state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, 0, new AsyncCallback(ReceiveCallback), state);
 
                         state.Guacd.ReceiveDone.WaitOne();
                     }
@@ -187,7 +187,7 @@ namespace GuacamoleSharp.Logic
             {
                 int receivedLength = state.Guacd.Socket.EndReceive(ar);
 
-                if (state.Timeout) throw new Exception($"[Connection {state.ConnectionId}] Timeout.");
+                if (state.Timeout) throw new Exception($"Timeout.");
 
                 if (receivedLength <= 0)
                 {
@@ -201,7 +201,7 @@ namespace GuacamoleSharp.Logic
 
                 if (message == null)
                 {
-                    state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), state);
+                    state.Guacd.Socket.BeginReceive(state.Guacd.Buffer, 0, state.Guacd.Buffer.Length, 0, new AsyncCallback(ReceiveCallback), state);
                     return;
                 }
 

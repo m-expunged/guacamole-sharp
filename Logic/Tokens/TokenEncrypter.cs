@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace GuacamoleSharp.Logic
+namespace GuacamoleSharp.Logic.Tokens
 {
     public static class TokenEncrypter
     {

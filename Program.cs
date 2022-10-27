@@ -1,5 +1,6 @@
 using GuacamoleSharp.Helpers;
-using GuacamoleSharp.Logic;
+using GuacamoleSharp.Logic.Sockets;
+using GuacamoleSharp.Logic.Tokens;
 using GuacamoleSharp.Models;
 using GuacamoleSharp.Options;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog((ctx, lc) => lc
-        .MinimumLevel.Information()
+        .MinimumLevel.Debug()
         .MinimumLevel.Override("System", LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .Enrich.FromLogContext()

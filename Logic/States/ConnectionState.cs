@@ -1,7 +1,7 @@
 ﻿using GuacamoleSharp.Helpers;
 using GuacamoleSharp.Models;
 
-namespace GuacamoleSharp.Logic.State
+namespace GuacamoleSharp.Logic.States
 {
     public class ConnectionState
     {

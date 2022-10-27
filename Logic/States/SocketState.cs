@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Text;
 
-namespace GuacamoleSharp.Logic.State
+namespace GuacamoleSharp.Logic.States
 {
     public class SocketState
     {

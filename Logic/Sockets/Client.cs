@@ -1,10 +1,10 @@
 ﻿using GuacamoleSharp.Helpers;
-using GuacamoleSharp.Logic.State;
+using GuacamoleSharp.Logic.States;
 using Serilog;
 using System.Net.Sockets;
 using System.Text;
 
-namespace GuacamoleSharp.Logic
+namespace GuacamoleSharp.Logic.Sockets
 {
     public class Client
     {
@@ -31,13 +31,13 @@ namespace GuacamoleSharp.Logic
             }
         }
 
-        public static void Send(ConnectionState state, string message, bool isWSF = true)
+        public static void Send(ConnectionState state, string message, bool isWebSocketFrame = true)
         {
             state.Client.SendDone.Reset();
 
-            Log.Debug("[Connection {Id}] >>>G2W> {Message}", state.ConnectionId, message);
+            Log.Debug("[Connection {Id}] >>>G2C> {Message}", state.ConnectionId);
 
-            byte[] data = isWSF ? WebSocketHelpers.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
+            byte[] data = isWebSocketFrame ? WebSocketHelpers.WriteToFrame(message) : Encoding.UTF8.GetBytes(message);
             state.Client.Socket.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), state);
 
             state.Client.SendDone.WaitOne();
@@ -86,7 +86,7 @@ namespace GuacamoleSharp.Logic
             {
                 int receivedLength = state.Client.Socket.EndReceive(ar);
 
-                if (state.Timeout) throw new Exception($"[Connection {state.ConnectionId}] Timeout.");
+                if (state.Timeout) throw new Exception($"Timeout.");
 
                 if (receivedLength <= 0)
                 {
@@ -117,9 +117,9 @@ namespace GuacamoleSharp.Logic
 
                 state.Client.OverflowBuffer.Remove(0, delimiterIndex);
 
-                if (message.Contains("10.disconnect;")) throw new Exception($"[Connection {state.ConnectionId}] Disconnect.");
+                if (message.Contains("10.disconnect;")) throw new Exception($"Disconnect.");
 
-                Send(state, message);
+                Guacd.Send(state, message);
 
                 state.Client.ReceiveDone.Set();
             }
@@ -132,7 +132,7 @@ namespace GuacamoleSharp.Logic
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error("[Connection {Id}] {Message}", state.ConnectionId, ex.Message);
 
                 Guacd.Close(state);
                 state.Client.ReceiveDone.Set();
