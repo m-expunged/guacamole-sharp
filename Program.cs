@@ -1,54 +1,61 @@
-using GuacamoleSharp.Configurations;
+using GuacamoleSharp.Helpers;
+using GuacamoleSharp.Logic;
 using GuacamoleSharp.Models;
-using GuacamoleSharp.Services;
+using GuacamoleSharp.Options;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Serilog.Events;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-var builder = WebApplication.CreateBuilder(args);
+const string outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {Message}{NewLine}{Exception}";
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(outputTemplate: outputTemplate)
+    .CreateBootstrapLogger();
 
-var logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .MinimumLevel.Override("System", LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message}{NewLine}{Exception}")
-    .CreateLogger();
-
-builder.Logging.ClearProviders();
-builder.Logging.AddSerilog(logger);
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddCors(options =>
+try
 {
-    options.AddDefaultPolicy(builder => builder
-        .SetIsOriginAllowed(x => _ = true)
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials());
-});
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<GuacamoleSharpSettings>(options => builder.Configuration.GetSection("GuacamoleSharp").Bind(options));
-builder.Services.AddSingleton<TokenEncrypterService>();
+    builder.Host.UseSerilog((ctx, lc) => lc
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("System", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .WriteTo.Console(outputTemplate: outputTemplate));
 
-var app = builder.Build();
+    builder.Services.AddCors(opts =>
+    {
+        opts.AddDefaultPolicy(builder => builder
+            .SetIsOriginAllowed(origin => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
+    });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    OptionsHelper.Client = builder.Configuration.GetSection(ClientOptions.Name).Get<ClientOptions>();
+    OptionsHelper.Socket = builder.Configuration.GetSection(SocketOptions.Name).Get<SocketOptions>();
+    OptionsHelper.Guacd = builder.Configuration.GetSection(GuacdOptions.Name).Get<GuacdOptions>();
+
+    var app = builder.Build();
+
+    app.UseCors();
+
+    app.MapPost("/{password}", ([Required] string password, [FromBody] Connection connection) =>
+    {
+        return Results.Ok(TokenEncrypter.EncryptString(password, JsonSerializer.Serialize(connection)));
+    });
+
+    Listener.Start();
+
+    app.Run();
 }
-
-app.UseCors();
-
-app.MapPost("/guacamolesharp/token/{password}", ([FromServices] TokenEncrypterService crypt, [Required] string password, [FromBody] Connection connection) =>
+catch (Exception ex)
 {
-    return Results.Ok(crypt.EncryptString(password, JsonSerializer.Serialize(connection)));
-});
-
-app.Run();
+    Log.Fatal("Fatal exception: {Message}", ex.Message);
+}
+finally
+{
+    Log.Information("Shut down complete.");
+    Log.CloseAndFlush();
+}

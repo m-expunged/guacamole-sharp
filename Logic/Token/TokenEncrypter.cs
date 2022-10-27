@@ -1,19 +1,17 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace GuacamoleSharp.Services
+namespace GuacamoleSharp.Logic
 {
-    public class TokenEncrypterService
+    public static class TokenEncrypter
     {
-        private readonly RandomNumberGenerator _rng;
-
-        public TokenEncrypterService()
+        public static string DecryptString(string password, string cipherText)
         {
-            _rng = RandomNumberGenerator.Create();
-        }
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentNullException(nameof(password));
+            if (string.IsNullOrWhiteSpace(cipherText))
+                throw new ArgumentNullException(nameof(cipherText));
 
-        public string DecryptString(string password, string cipherText)
-        {
             string base64Text = cipherText
                 .Replace('_', '/')
                 .Replace('-', '+');
@@ -29,7 +27,6 @@ namespace GuacamoleSharp.Services
             byte[] iv = cipherBytes.Take(16).ToArray();
 
             using var aes = Aes.Create();
-
             aes.Key = key;
             aes.IV = iv;
 
@@ -42,11 +39,16 @@ namespace GuacamoleSharp.Services
             return reader.ReadToEnd();
         }
 
-        public string EncryptString(string password, string plainText)
+        public static string EncryptString(string password, string plainText)
         {
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentNullException(nameof(password));
+            if (string.IsNullOrWhiteSpace(plainText))
+                throw new ArgumentNullException(nameof(plainText));
+
             byte[] key = GenerateKey(password);
             byte[] iv = new byte[16];
-            _rng.GetBytes(iv);
+            RandomNumberGenerator.Create().GetBytes(iv);
 
             byte[] result;
 
@@ -62,7 +64,6 @@ namespace GuacamoleSharp.Services
                 using (var memStream = new MemoryStream())
                 {
                     using var cryStream = new CryptoStream(memStream, encrypter, CryptoStreamMode.Write);
-
                     using (var writer = new StreamWriter(cryStream))
                     {
                         writer.Write(plainText);
@@ -81,11 +82,10 @@ namespace GuacamoleSharp.Services
             return base64result.TrimEnd('=').Replace('+', '-').Replace('/', '_');
         }
 
-        private byte[] GenerateKey(string password)
+        private static byte[] GenerateKey(string password)
         {
             byte[] keyBytes = Encoding.UTF8.GetBytes(password);
             using var md5 = MD5.Create();
-
             return md5.ComputeHash(keyBytes);
         }
     }

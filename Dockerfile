@@ -3,21 +3,21 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 
-EXPOSE 80/tcp
-EXPOSE 8080/tcp
+EXPOSE 80
+EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
+COPY ["GuacamoleSharp.csproj", "."]
+RUN dotnet restore "./GuacamoleSharp.csproj"
 COPY . .
-RUN dotnet restore "GuacamoleSharp.csproj"
-WORKDIR "/src/GuacamoleSharp"
-RUN dotnet build "GuacamoleSharp.csproj" -c Release -o /app
+WORKDIR "/src/."
+RUN dotnet build "GuacamoleSharp.csproj" -c Release -o /app/build
 
 FROM build AS publish
-WORKDIR "/src/GuacamoleSharp"
-RUN dotnet publish "GuacamoleSharp.csproj" -c Release -o /app
+RUN dotnet publish "GuacamoleSharp.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app .
+COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "GuacamoleSharp.dll"]
