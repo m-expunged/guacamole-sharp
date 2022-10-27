@@ -14,15 +14,15 @@ services:
 
   guacamolesharp:
     container_name: guacamolesharp
-    image: manuelexpunged/guacamolesharp:latest
+    image: manuelexpunged/guacamolesharp:2.0.0
     depends_on:
       guacd:
         condition: service_started
     restart: always
     environment:
-      - GuacamoleSharp:Password=YourTokenEncryptionPasswordHere
-      - GuacamoleSharp:Guacd:Hostname=guacd
-      - GuacamoleSharp:Guacd:Port=4822
+      - Socket:Password=YourTokenEncryptionPasswordHere
+      - Guacd:Hostname=guacd
+      - Guacd:Port=4822
     ports:
       - '80:80/tcp'
       - '8080:8080/tcp'
