@@ -19,8 +19,6 @@ try
 
     builder.Host.UseSerilog((ctx, lc) => lc
         .MinimumLevel.Information()
-        .MinimumLevel.Override("System", LogEventLevel.Warning)
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: outputTemplate));
 

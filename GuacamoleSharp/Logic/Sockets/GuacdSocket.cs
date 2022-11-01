@@ -50,6 +50,8 @@ namespace GuacamoleSharp.Logic.Sockets
 
         public async Task OpenConnectionAsync(Connection connection)
         {
+            Log.Information("[{Id}] Attempting connection to guacd proxy at: {Hostname}:{Port}", _id, _endpoint.Address, _endpoint.Port);
+
             _socket = new Socket(_endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             await _socket.ConnectAsync(_endpoint);
             await SendAsync(ProtocolHelper.BuildProtocol("select", connection.Type));
