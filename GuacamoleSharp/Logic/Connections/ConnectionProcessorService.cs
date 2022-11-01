@@ -1,5 +1,5 @@
-﻿using GuacamoleSharp.Logic.Sockets;
-using GuacamoleSharp.Logic.Tokens;
+﻿using GuacamoleSharp.Helpers;
+using GuacamoleSharp.Logic.Sockets;
 using GuacamoleSharp.Models;
 using GuacamoleSharp.Options;
 using Microsoft.Extensions.Options;
@@ -97,7 +97,7 @@ namespace GuacamoleSharp.Logic.Connections
                 Log.Information("[{Id}] Building connection configuration...", pendingConnection.Id);
 
                 var token = pendingConnection.Arguments["token"];
-                var plainText = TokenEncrypter.DecryptString(_guacamoleSharpOptions.Password, token);
+                var plainText = TokenEncryptionHelper.DecryptString(_guacamoleSharpOptions.Password, token);
                 var connection = JsonSerializer.Deserialize<Connection>(plainText, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? throw new Exception($"Connection token failed to serialize");
                 connection.Type = connection.Type.ToLowerInvariant();
 

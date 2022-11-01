@@ -1,9 +1,9 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace GuacamoleSharp.Logic.Tokens
+namespace GuacamoleSharp.Helpers
 {
-    public static class TokenEncrypter
+    public static class TokenEncryptionHelper
     {
         public static string DecryptString(string password, string cipherText)
         {

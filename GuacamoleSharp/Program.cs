@@ -1,10 +1,9 @@
+using GuacamoleSharp.Helpers;
 using GuacamoleSharp.Logic.Connections;
-using GuacamoleSharp.Logic.Tokens;
 using GuacamoleSharp.Models;
 using GuacamoleSharp.Options;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Serilog.Events;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
@@ -46,7 +45,7 @@ try
     {
         try
         {
-            return Results.Ok(TokenEncrypter.EncryptString(password, JsonSerializer.Serialize(connection)));
+            return Results.Ok(TokenEncryptionHelper.EncryptString(password, JsonSerializer.Serialize(connection)));
         }
         catch (Exception ex)
         {
