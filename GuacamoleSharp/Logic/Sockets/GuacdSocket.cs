@@ -2,27 +2,33 @@
 using GuacamoleSharp.Models;
 using Serilog;
 using System.Net;
-using System.Net.WebSockets;
+using System.Net.Sockets;
+using System.Text;
 
 namespace GuacamoleSharp.Logic.Sockets
 {
-    public class GuacdSocket : BaseSocket
+    public class GuacdSocket
     {
+        protected readonly ArraySegment<byte> _buffer;
+        protected readonly Guid _id;
+        protected readonly StringBuilder _overflowBuffer;
         private readonly IPEndPoint _endpoint;
+        private Socket _socket = null!;
 
-        public GuacdSocket(ClientWebSocket socket, Guid id, IPEndPoint endpoint) : base(socket, id)
+        public GuacdSocket(Guid id, IPEndPoint endpoint)
         {
             _endpoint = endpoint;
+            _buffer = new ArraySegment<byte>(new byte[1024]);
+            _overflowBuffer = new StringBuilder();
+            _id = id;
         }
 
-        public override async Task<bool> CloseAsync()
+        public bool Close()
         {
             try
             {
-                Log.Information("[{Id}] Attemping to close guacd proxy socket...", _id);
-
-                _cts.Cancel();
-                await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, String.Empty, CancellationToken.None);
+                _socket.Shutdown(SocketShutdown.Both);
+                _socket.Close();
 
                 Log.Information("[{Id}] Guacd proxy socket closed.", _id);
 
@@ -36,7 +42,7 @@ namespace GuacamoleSharp.Logic.Sockets
             }
             catch (Exception ex)
             {
-                Log.Error("[{Id}] Error while closing guacd proxy socket: {ex}", _id, ex.Message);
+                Log.Error("[{Id}] Error while closing guacd proxy socket: {Message}", _id, ex.Message);
 
                 return false;
             }
@@ -44,18 +50,13 @@ namespace GuacamoleSharp.Logic.Sockets
 
         public async Task OpenConnectionAsync(Connection connection)
         {
-            await ((ClientWebSocket)_socket).ConnectAsync(new Uri($"ws://{_endpoint.Address}:{_endpoint.Port}"), CancellationToken.None);
-
+            _socket = new Socket(_endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            await _socket.ConnectAsync(_endpoint);
             await SendAsync(ProtocolHelper.BuildProtocol("select", connection.Type));
 
             var request = await ReceiveAsync();
 
-            if (request == null)
-            {
-                throw new Exception("Guacd proxy failed to send handshake request.");
-            }
-
-            Log.Debug("[Connection {Id}] Attempting to resolve handshake: {Request}", _id, request);
+            Log.Debug("[{Id}] Attempting to resolve handshake: {Request}", _id, request);
 
             await SendAsync(ProtocolHelper.BuildProtocol("size", connection.Arguments["width"], connection.Arguments["height"], connection.Arguments["dpi"]));
             await SendAsync(ProtocolHelper.BuildProtocol("audio", "audio/L16", connection.Arguments["audio"]));
@@ -65,6 +66,43 @@ namespace GuacamoleSharp.Logic.Sockets
             var reply = ProtocolHelper.BuildHandshakeReply(connection, request);
 
             await SendAsync(ProtocolHelper.BuildProtocol(reply));
+        }
+
+        public async Task<string> ReceiveAsync()
+        {
+            var done = false;
+            (string content, int index) message;
+
+            do
+            {
+                var received = await _socket.ReceiveAsync(_buffer, SocketFlags.None);
+
+                if (received > 0)
+                {
+                    _overflowBuffer.Append(Encoding.UTF8.GetString(_buffer[0..received]));
+                }
+
+                var reponse = _overflowBuffer.ToString();
+                message = ProtocolHelper.ReadProtocolUntilLastDelimiter(reponse);
+
+                if (message.content != string.Empty)
+                {
+                    done = true;
+                }
+            }
+            while (!done);
+
+            _overflowBuffer.Remove(0, message.index);
+
+            return message.content;
+        }
+
+        public async Task SendAsync(string message)
+        {
+            Log.Debug("[{Id}] >>>C2G> {Message}", _id, message);
+
+            var data = Encoding.UTF8.GetBytes(message);
+            await _socket.SendAsync(data, SocketFlags.None);
         }
     }
 }

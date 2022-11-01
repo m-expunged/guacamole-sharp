@@ -23,7 +23,7 @@ namespace GuacamoleSharp.Logic.Sockets
         {
             _cts.Cancel();
 
-            var r1 = await _guacd.CloseAsync();
+            var r1 = _guacd.Close();
             var r2 = await _client.CloseAsync();
 
             _complete.TrySetResult(r1 && r2);
@@ -35,40 +35,37 @@ namespace GuacamoleSharp.Logic.Sockets
 
             var ct = _cts.Token;
 
-            _ = Task.Run(() => DoProxyToClientAsync(ct), ct);
-            _ = Task.Run(() => DoClientToProxyAsync(ct), ct);
-        }
-
-        private async Task DoClientToProxyAsync(CancellationToken ct)
-        {
-            while (!ct.IsCancellationRequested)
+            _ = Task.Run(async () =>
             {
-                var message = await _client.ReceiveAsync();
-
-                if (message.Contains("10.disconnect;"))
+                while (!ct.IsCancellationRequested)
                 {
-                    await CloseAsync();
-                    return;
+                    var message = await _client.ReceiveAsync();
+
+                    if (message.Contains("10.disconnect;"))
+                    {
+                        await CloseAsync();
+                        return;
+                    }
+
+                    await _guacd.SendAsync(message);
                 }
+            }, ct);
 
-                await _guacd.SendAsync(message);
-            }
-        }
-
-        private async Task DoProxyToClientAsync(CancellationToken ct)
-        {
-            while (!ct.IsCancellationRequested)
+            _ = Task.Run(async () =>
             {
-                var message = await _guacd.ReceiveAsync();
-
-                if (message.Contains("10.disconnect;"))
+                while (!ct.IsCancellationRequested)
                 {
-                    await CloseAsync();
-                    return;
-                }
+                    var message = await _guacd.ReceiveAsync();
 
-                await _client.SendAsync(message);
-            }
+                    if (message.Contains("10.disconnect;"))
+                    {
+                        await CloseAsync();
+                        return;
+                    }
+
+                    await _client.SendAsync(message);
+                }
+            }, ct);
         }
     }
 }

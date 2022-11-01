@@ -14,10 +14,15 @@ namespace GuacamoleSharp.Logic.Connections
 {
     public class ConnectionProcessorService : BackgroundService
     {
-        private static readonly ConcurrentQueue<PendingConnection> _pendingConnections = new();
+        private static readonly ConcurrentQueue<PendingConnection> _pendingConnections;
         private readonly ClientOptions _clientOptions;
         private readonly GuacamoleSharpOptions _guacamoleSharpOptions;
         private readonly GuacdOptions _guacdOptions;
+
+        static ConnectionProcessorService()
+        {
+            _pendingConnections = new ConcurrentQueue<PendingConnection>();
+        }
 
         public ConnectionProcessorService(IOptions<ClientOptions> clientOptions, IOptions<GuacamoleSharpOptions> guacamoleSharpOptions, IOptions<GuacdOptions> guacdOptions)
         {
@@ -36,13 +41,15 @@ namespace GuacamoleSharp.Logic.Connections
             });
         }
 
-        public override Task StopAsync(CancellationToken cancellationToken)
+        public override Task StopAsync(CancellationToken stoppingToken)
         {
-            return base.StopAsync(cancellationToken);
+            return base.StopAsync(stoppingToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            await Task.Yield();
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 while (_pendingConnections.TryDequeue(out var pendingConnection))
@@ -53,8 +60,8 @@ namespace GuacamoleSharp.Logic.Connections
                     {
                         var connection = GetConnectionConfiguration(pendingConnection);
                         var endpoint = GetProxyEndPoint();
-                        var client = new ClientSocket(pendingConnection.Socket, pendingConnection.Id);
-                        var guacd = new GuacdSocket(new ClientWebSocket(), pendingConnection.Id, endpoint);
+                        var client = new ClientSocket(pendingConnection.Id, pendingConnection.Socket);
+                        var guacd = new GuacdSocket(pendingConnection.Id, endpoint);
 
                         tunnel = new Tunnel(connection, client, guacd, pendingConnection.Complete);
                     }
@@ -78,8 +85,6 @@ namespace GuacamoleSharp.Logic.Connections
                         await tunnel.CloseAsync();
                     }
                 }
-
-                await Task.Delay(1000, stoppingToken);
             }
 
             await Task.CompletedTask;

@@ -63,7 +63,7 @@ try
         {
             if (ctx.WebSockets.IsWebSocketRequest)
             {
-                using var socket = await ctx.WebSockets.AcceptWebSocketAsync();
+                using var socket = await ctx.WebSockets.AcceptWebSocketAsync("guacamole");
 
                 var connectionArgs = ctx.Request.Query
                     .Where(x => !string.IsNullOrWhiteSpace(x.Key) && !string.IsNullOrWhiteSpace(x.Value))
