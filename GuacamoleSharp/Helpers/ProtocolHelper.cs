@@ -31,12 +31,12 @@ namespace GuacamoleSharp.Helpers
             return string.Join(',', result) + ";";
         }
 
-        public static (string? content, int index) ReadProtocolUntilLastDelimiter(string content)
+        public static (string content, int index) ReadProtocolUntilLastDelimiter(string content)
         {
             int index = content.LastIndexOf(';');
 
             if (index == -1)
-                return (null, index);
+                return (string.Empty, index);
 
             if (content.Length - 1 == index)
                 return (content, content.Length);

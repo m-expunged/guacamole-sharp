@@ -20,7 +20,7 @@ services:
         condition: service_started
     restart: always
     environment:
-      - Socket:Password=YourTokenEncryptionPasswordHere
+      - GuacamoleSharp:Password=YourTokenEncryptionPasswordHere
       - Guacd:Hostname=guacd
       - Guacd:Port=4822
     ports:

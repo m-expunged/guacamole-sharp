@@ -41,7 +41,7 @@ docker run --name guacd
 ```bash
 docker run --name guacamolesharp
 --link guacd:guacd
--e Socket:Password=YourTokenEncryptionPasswordHere
+-e GuacamoleSharp:Password=YourTokenEncryptionPasswordHere
 -e Guacd:Hostname=guacd
 -e Guacd:Port=4822
 -p 80:80
@@ -136,7 +136,7 @@ In order to simplify the configuration of connections, you can specify default a
 By default, the guacamole-sharp WebSocket server listens on port 8080 and tries to connect to guacd on port 4822. If you want to specify different default ports you can change them in the appsettings.json. Here you can also specify the token password if Docker isn't an option. Make sure the guacd port here is the same as the port of the actual guacd docker image!
 
 ```json
-"Socket": {
+"GuacamoleSharp": {
   "Port": 8080,
   "Password": "YourTokenEncryptionPasswordHere"
 },
@@ -230,10 +230,10 @@ client.connect(connectionString);
 Some arguments have fallback values and can be left empty in appsettings.json/Dockerfile:
 
 ```c#
-Guacd:Hostname = 127.0.0.1
+GuacamoleSharp:MaxInactivityAllowedInMin = 10
+GuacamoleSharp:Port = 8080
+Guacd:Hostname = "127.0.0.1"
 Guacd:Port = 4822
-Socket:MaxInactivityAllowedInMin = 10
-Socket:Port = 8080
 ```
 
 ### Arguments overwrite priority
