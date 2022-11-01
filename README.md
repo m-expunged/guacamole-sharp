@@ -1,6 +1,6 @@
 # guacamole-sharp
 
-> ⚠️ Previous working version of guacamole-sharp docker image is now avaible under the "1.0.0" tag. The new version "2.0.0" is still being tested.
+> ⚠️ Previous working version of guacamole-sharp docker image is now avaible under the "1.0.0" tag. The new version "2.1.0" is still being tested.
 
 guacamole-sharp is a C# replacement of the Apache Guacamole server-side Java servlet.
 It is intended for customizable integration of Apache Guacamole into existing frontend projects with their own user and connection management.
@@ -45,11 +45,10 @@ docker run --name guacamolesharp
 -e Guacd:Hostname=guacd
 -e Guacd:Port=4822
 -p 80:80
--p 8080:8080
--d manuelexpunged/guacamolesharp:2.0.0
+-d manuelexpunged/guacamolesharp:2.1.0
 ```
 
-With the configuration above, the guacamole-sharp container will listen for API calls on port 80 and for WebSocket connections on port 8080.
+With the configuration above, the guacamole-sharp container will listen for API/WebSocket connections on port 80.
 
 A docker compose example is included in the repository.
 
@@ -60,7 +59,7 @@ guacamole-sharp transports the arguments for remote connections via an encrypted
 The token is passed to the guacamole-common-js client instance as a parameter of the connect method.
 
 ```js
-let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:8080");
+let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:80/connect");
 let client = new Guacamole.Client(tunnel);
 
 client.connect(
@@ -71,14 +70,14 @@ client.connect(
 To generate such a token, guacamole-sharp exposes an endpoint.
 
 ```
-'HOSTNAME:PORT/TOKEN_ENCRYPTION_PASSWORD'
+'HOSTNAME:PORT/token/TOKEN_ENCRYPTION_PASSWORD'
 ```
 
 Curl example:
 
 ```bash
 curl -X 'POST' \
- 'http://localhost:5072/YourTokenEncryptionPasswordHere' \
+ 'http://localhost:5072/token/YourTokenEncryptionPasswordHere' \
  -H 'accept: text/plain' \
  -H 'Content-Type: application/json' \
  -d '{
@@ -121,6 +120,8 @@ In order to use guacamole-sharp, you will need to use the guacamole-common-js li
 
 A good way to get started is to look at the Angular example that is included in the repository, using the guacamole-common-js npm package. You might need to create a d.ts file if you are using Typescript in your project.
 
+> ⚠️ Resolution of VNC connections must be handled client side since the VNC protocol does not define any mechanism for the connecting client to indicate the desired screen size.
+
 Also, pay attention to the z-index, height and width of the guacamole-common-js display element and its parent/child elements, specifically the canvas elements. In some cases the lib creates them with weird values (e.g. z-index: -1) and you might need to change them after the element is added to the DOM.
 
 If you want to include your own examples or notice something that could have been done better feel free to open a issue/pull request.
@@ -133,11 +134,10 @@ In order to simplify the configuration of connections, you can specify default a
 
 ### Default Guacd, WebSocket server and token arguments
 
-By default, the guacamole-sharp WebSocket server listens on port 8080 and tries to connect to guacd on port 4822. If you want to specify different default ports you can change them in the appsettings.json. Here you can also specify the token password if Docker isn't an option. Make sure the guacd port here is the same as the port of the actual guacd docker image!
+By default, guacamole-sharp tries to connect to guacd on port 4822. If you want to specify a different default port you can change them in the appsettings.json. Here you can also specify the token password if Docker isn't an option. Make sure the guacd port here is the same as the port of the actual guacd docker image!
 
 ```json
 "GuacamoleSharp": {
-  "Port": 8080,
   "Password": "YourTokenEncryptionPasswordHere"
 },
 "Guacd": {
@@ -145,8 +145,6 @@ By default, the guacamole-sharp WebSocket server listens on port 8080 and tries 
   "Port": 4822
 },
 ```
-
-**The WebSocket server will always listen on all network interfaces for client activity, only the port can be changed.**
 
 ### Default connection arguments
 
@@ -194,7 +192,9 @@ The properties inside 'DefaultArguments' are generally **lowercase**.
 
 ### Unencrypted connection arguments
 
-While most arguments for connections should be packed into the encrypted token string, there is also the option to send certain arguments as an unencrypted query parameter by adding them to the unencrypted connection arguments dictionary for their respective connection type.
+While most arguments for connections should be packed into the encrypted token string, there is also the option to send certain arguments as an unencrypted query parameter.
+
+To allow arguments to be sent unencrypted, add them to the unencrypted connection arguments dictionary for their respective connection type inside the appsettings.json.
 
 All valid guacamole-protocol arguments can used in their unencrypted form, except for the connection type (ssh/rdp/...) which is the only argument that is required to be passed via the connection token.
 
@@ -214,7 +214,7 @@ By default, these arguments can be sent unencrypted:
 Example unencrypted arguments usage:
 
 ```js
-let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:8080");
+let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:80/connect");
 let client = new Guacamole.Client(tunnel);
 
 let connectionString =
@@ -230,8 +230,6 @@ client.connect(connectionString);
 Some arguments have fallback values and can be left empty in appsettings.json/Dockerfile:
 
 ```c#
-GuacamoleSharp:MaxInactivityAllowedInMin = 10
-GuacamoleSharp:Port = 8080
 Guacd:Hostname = "127.0.0.1"
 Guacd:Port = 4822
 ```

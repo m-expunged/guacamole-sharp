@@ -13,7 +13,7 @@ export class AppComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     // Init tunnel and client
-    let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:8080");
+    let tunnel = new Guacamole.WebSocketTunnel("ws://localhost:8080/connect");
     let client = new Guacamole.Client(tunnel);
 
     // Error handler
@@ -28,11 +28,12 @@ export class AppComponent implements AfterViewInit {
     // Mouse
     var mouse = new Guacamole.Mouse(display);
 
-    mouse.onmousedown = mouse.onmouseup = mouse.onmousemove = function (
-      mouseState: any
-    ) {
-      client.sendMouseState(mouseState);
-    };
+    mouse.onmousedown =
+      mouse.onmouseup =
+      mouse.onmousemove =
+        function (mouseState: any) {
+          client.sendMouseState(mouseState);
+        };
 
     // Keyboard
     var keyboard = new Guacamole.Keyboard(document);

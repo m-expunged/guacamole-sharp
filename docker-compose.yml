@@ -14,7 +14,7 @@ services:
 
   guacamolesharp:
     container_name: guacamolesharp
-    image: manuelexpunged/guacamolesharp:2.0.0
+    image: manuelexpunged/guacamolesharp:2.1.0
     depends_on:
       guacd:
         condition: service_started
@@ -25,7 +25,6 @@ services:
       - Guacd:Port=4822
     ports:
       - '80:80/tcp'
-      - '8080:8080/tcp'
     networks:
       guacnetwork:
 
