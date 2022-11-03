@@ -1,4 +1,9 @@
-﻿using GuacamoleSharp.Helpers;
+﻿/*******************************************
+ * Copyright (c) 2022, Fill GmbH, Austria
+ * All rights reserved.
+ *******************************************/
+
+using GuacamoleSharp.Helpers;
 using Serilog;
 using System.Net.WebSockets;
 using System.Text;
@@ -7,11 +12,22 @@ namespace GuacamoleSharp.Logic.Sockets
 {
     public class ClientSocket
     {
+        #region Protected Fields
+
         protected readonly ArraySegment<byte> _buffer;
         protected readonly CancellationTokenSource _cts;
         protected readonly Guid _id;
         protected readonly StringBuilder _overflowBuffer;
+
+        #endregion Protected Fields
+
+        #region Private Fields
+
         private readonly WebSocket _socket;
+
+        #endregion Private Fields
+
+        #region Public Constructors
 
         public ClientSocket(Guid id, WebSocket socket)
         {
@@ -22,12 +38,20 @@ namespace GuacamoleSharp.Logic.Sockets
             _id = id;
         }
 
+        #endregion Public Constructors
+
+        #region Public Methods
+
         public async Task<bool> CloseAsync()
         {
             try
             {
                 _cts.Cancel();
-                await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, String.Empty, CancellationToken.None);
+
+                if (_socket.State == WebSocketState.Open)
+                {
+                    await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, String.Empty, CancellationToken.None);
+                }
 
                 Log.Information("[{Id}] Client socket closed.", _id);
 
@@ -79,5 +103,7 @@ namespace GuacamoleSharp.Logic.Sockets
             var data = Encoding.UTF8.GetBytes(message);
             await _socket.SendAsync(new ArraySegment<byte>(data, 0, data.Length), WebSocketMessageType.Text, true, _cts.Token);
         }
+
+        #endregion Public Methods
     }
 }
