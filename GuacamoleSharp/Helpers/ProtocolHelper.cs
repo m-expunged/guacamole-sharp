@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Helpers
 {
-    public class ProtocolHelper
+    internal static class ProtocolHelper
     {
         public static string?[] BuildHandshakeReply(Connection connection, string handshake)
         {

@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Logic.Sockets
 {
-    public class Tunnel
+    internal sealed class Tunnel
     {
         private readonly ClientSocket _client;
         private readonly TaskCompletionSource<bool> _complete;

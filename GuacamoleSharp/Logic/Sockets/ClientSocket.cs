@@ -5,14 +5,12 @@ using System.Text;
 
 namespace GuacamoleSharp.Logic.Sockets
 {
-    public class ClientSocket
+    internal sealed class ClientSocket
     {
-
-        protected readonly ArraySegment<byte> _buffer;
-        protected readonly CancellationTokenSource _cts;
-        protected readonly Guid _id;
-        protected readonly StringBuilder _overflowBuffer;
-
+        private readonly ArraySegment<byte> _buffer;
+        private readonly CancellationTokenSource _cts;
+        private readonly Guid _id;
+        private readonly StringBuilder _overflowBuffer;
         private readonly WebSocket _socket;
 
         public ClientSocket(Guid id, WebSocket socket)

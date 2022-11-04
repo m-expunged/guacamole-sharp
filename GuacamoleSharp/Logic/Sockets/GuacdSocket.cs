@@ -8,11 +8,11 @@ using System.Text;
 
 namespace GuacamoleSharp.Logic.Sockets
 {
-    public class GuacdSocket
+    internal sealed class GuacdSocket
     {
-        protected readonly ArraySegment<byte> _buffer;
-        protected readonly Guid _id;
-        protected readonly StringBuilder _overflowBuffer;
+        private readonly ArraySegment<byte> _buffer;
+        private readonly Guid _id;
+        private readonly StringBuilder _overflowBuffer;
         private readonly IPEndPoint _endpoint;
         private readonly CancellationTokenSource _cts;
         private Socket _socket = null!;

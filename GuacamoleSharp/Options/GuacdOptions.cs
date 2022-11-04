@@ -1,6 +1,6 @@
 ﻿namespace GuacamoleSharp.Options
 {
-    public sealed class GuacdOptions
+    internal sealed class GuacdOptions
     {
         public const string Name = "Guacd";
 

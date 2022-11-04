@@ -12,7 +12,7 @@ using System.Text.Json;
 
 namespace GuacamoleSharp.Logic.Connections
 {
-    public class ConnectionProcessorService : BackgroundService
+    internal sealed class ConnectionProcessorService : BackgroundService
     {
         private static readonly ConcurrentQueue<PendingConnection> _pendingConnections;
         private static readonly ManualResetEvent _idle;

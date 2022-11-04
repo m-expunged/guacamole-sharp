@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Models
 {
-    public class Connection
+    internal sealed class Connection
     {
         public Arguments Arguments { get; set; } = new();
 

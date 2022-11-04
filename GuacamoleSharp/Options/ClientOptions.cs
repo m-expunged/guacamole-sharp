@@ -1,6 +1,6 @@
 ﻿namespace GuacamoleSharp.Options
 {
-    public sealed class ClientOptions
+    internal sealed class ClientOptions
     {
         public const string Name = "Client";
 
