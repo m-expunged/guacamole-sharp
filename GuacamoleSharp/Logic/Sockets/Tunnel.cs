@@ -50,7 +50,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
                     await _guacd.SendAsync(message);
                 }
-            }, ct);
+            });
 
             _ = Task.Run(async () =>
             {
@@ -66,7 +66,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
                     await _client.SendAsync(message);
                 }
-            }, ct);
+            });
         }
     }
 }

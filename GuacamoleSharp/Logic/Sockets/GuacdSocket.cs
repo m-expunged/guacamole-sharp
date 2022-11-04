@@ -14,6 +14,7 @@ namespace GuacamoleSharp.Logic.Sockets
         protected readonly Guid _id;
         protected readonly StringBuilder _overflowBuffer;
         private readonly IPEndPoint _endpoint;
+        private readonly CancellationTokenSource _cts;
         private Socket _socket = null!;
         private string? _internalId; // Implement joining existing connections?
 
@@ -23,6 +24,7 @@ namespace GuacamoleSharp.Logic.Sockets
             _buffer = new ArraySegment<byte>(new byte[1024]);
             _overflowBuffer = new StringBuilder();
             _id = id;
+            _cts = new CancellationTokenSource();
         }
 
         public bool Close()
@@ -31,6 +33,7 @@ namespace GuacamoleSharp.Logic.Sockets
             {
                 try
                 {
+                    _cts.Cancel();
                     _socket.Shutdown(SocketShutdown.Both);
                 }
                 finally
@@ -100,7 +103,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
             do
             {
-                var received = await _socket.ReceiveAsync(_buffer, SocketFlags.None);
+                var received = await _socket.ReceiveAsync(_buffer, SocketFlags.None, _cts.Token);
 
                 if (received > 0)
                 {
@@ -127,7 +130,7 @@ namespace GuacamoleSharp.Logic.Sockets
             Log.Debug("[{Id}] >>>C2G> {Message}", _id, message);
 
             var data = Encoding.UTF8.GetBytes(message);
-            await _socket.SendAsync(data, SocketFlags.None);
+            await _socket.SendAsync(data, SocketFlags.None, _cts.Token);
         }
     }
 }
