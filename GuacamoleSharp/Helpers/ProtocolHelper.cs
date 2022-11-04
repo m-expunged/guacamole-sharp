@@ -18,6 +18,11 @@ namespace GuacamoleSharp.Helpers
             return args;
         }
 
+        public static string ParseConnectionId(string message)
+        {
+            return new string(message.Reverse().Skip(1).TakeWhile(x => x != '.').Reverse().ToArray());
+        }
+
         public static string BuildProtocol(params string?[] args)
         {
             string[] result = new string[args.Length];

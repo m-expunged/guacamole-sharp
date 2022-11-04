@@ -68,7 +68,7 @@ namespace GuacamoleSharp.Logic.Connections
                     catch (Exception ex)
                     {
                         Log.Error("[{Id}] {Message}.", pendingConnection.Id, ex.Message);
-                        Log.Information("[{Id}] Closing connection.", pendingConnection.Id);
+                        Log.Information("[{Id}] Closing connection...", pendingConnection.Id);
                         await pendingConnection.Socket.CloseAsync(WebSocketCloseStatus.InternalServerError, string.Empty, CancellationToken.None);
                         pendingConnection.Complete.TrySetResult(false);
                         continue;

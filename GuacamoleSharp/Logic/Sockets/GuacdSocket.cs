@@ -1,5 +1,6 @@
 ﻿using GuacamoleSharp.Helpers;
 using GuacamoleSharp.Models;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Net;
 using System.Net.Sockets;
@@ -14,6 +15,7 @@ namespace GuacamoleSharp.Logic.Sockets
         protected readonly StringBuilder _overflowBuffer;
         private readonly IPEndPoint _endpoint;
         private Socket _socket = null!;
+        private string? _internalId; // Implement joining existing connections?
 
         public GuacdSocket(Guid id, IPEndPoint endpoint)
         {
@@ -48,7 +50,7 @@ namespace GuacamoleSharp.Logic.Sockets
             }
         }
 
-        public async Task OpenConnectionAsync(Connection connection)
+        public async Task<string> OpenConnectionAsync(Connection connection)
         {
             Log.Information("[{Id}] Attempting connection to guacd proxy at: {Hostname}:{Port}", _id, _endpoint.Address, _endpoint.Port);
 
@@ -68,6 +70,21 @@ namespace GuacamoleSharp.Logic.Sockets
             var reply = ProtocolHelper.BuildHandshakeReply(connection, request);
 
             await SendAsync(ProtocolHelper.BuildProtocol(reply));
+
+            var ready = await ReceiveAsync();
+            if (ready.Contains("5.ready"))
+            {
+                _internalId = ProtocolHelper.ParseConnectionId(ready);
+                Log.Debug("[{Id}] Guacd proxy connection id: {GuacdId}", _id, _internalId);
+            }
+            else
+            {
+                Log.Debug("[{Id}] Could not set guacd connection id.", _id);
+            }
+
+            Log.Information("[{Id}] Handshake success. Connection ready.", _id);
+
+            return ready;
         }
 
         public async Task<string> ReceiveAsync()

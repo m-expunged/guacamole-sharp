@@ -31,7 +31,8 @@ namespace GuacamoleSharp.Logic.Sockets
 
         public async Task OpenAsync()
         {
-            await _guacd.OpenConnectionAsync(_connection);
+            var ready = await _guacd.OpenConnectionAsync(_connection);
+            await _client.SendAsync(ready);
 
             var ct = _cts.Token;
 
