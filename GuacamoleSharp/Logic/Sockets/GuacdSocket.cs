@@ -29,8 +29,14 @@ namespace GuacamoleSharp.Logic.Sockets
         {
             try
             {
-                _socket.Shutdown(SocketShutdown.Both);
-                _socket.Close();
+                try
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                }
+                finally
+                {
+                    _socket.Close();
+                }
 
                 Log.Information("[{Id}] Guacd proxy socket closed.", _id);
 
