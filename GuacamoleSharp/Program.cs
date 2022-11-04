@@ -68,9 +68,9 @@ try
 
                 var complete = new TaskCompletionSource<bool>();
 
-                ConnectionProcessorService.Add(socket, connectionArgs, complete);
+                await ConnectionProcessorService.Add(socket, connectionArgs, complete);
 
-                _ = await complete.Task;
+                await complete.Task;
             }
             else
             {

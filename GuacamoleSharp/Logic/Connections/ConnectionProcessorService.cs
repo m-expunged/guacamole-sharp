@@ -15,6 +15,8 @@ namespace GuacamoleSharp.Logic.Connections
     public class ConnectionProcessorService : BackgroundService
     {
         private static readonly ConcurrentQueue<PendingConnection> _pendingConnections;
+        private static readonly ManualResetEvent _idle;
+        private static readonly SemaphoreSlim _processing;
         private readonly ClientOptions _clientOptions;
         private readonly GuacamoleSharpOptions _guacamoleSharpOptions;
         private readonly GuacdOptions _guacdOptions;
@@ -22,6 +24,8 @@ namespace GuacamoleSharp.Logic.Connections
         static ConnectionProcessorService()
         {
             _pendingConnections = new ConcurrentQueue<PendingConnection>();
+            _idle = new ManualResetEvent(false);
+            _processing = new SemaphoreSlim(1, 1);
         }
 
         public ConnectionProcessorService(IOptions<ClientOptions> clientOptions, IOptions<GuacamoleSharpOptions> guacamoleSharpOptions, IOptions<GuacdOptions> guacdOptions)
@@ -31,14 +35,19 @@ namespace GuacamoleSharp.Logic.Connections
             _guacdOptions = guacdOptions.Value;
         }
 
-        public static void Add(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource<bool> complete)
+        public static async Task Add(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource<bool> complete)
         {
+            await _processing.WaitAsync();
+
             _pendingConnections.Enqueue(new PendingConnection
             {
                 Socket = socket,
                 Arguments = arguments,
                 Complete = complete
             });
+
+            _idle.Set();
+            _processing.Release();
         }
 
         public override Task StopAsync(CancellationToken stoppingToken)
@@ -52,6 +61,9 @@ namespace GuacamoleSharp.Logic.Connections
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                _idle.WaitOne();
+                await _processing.WaitAsync(stoppingToken);
+          
                 while (_pendingConnections.TryDequeue(out var pendingConnection))
                 {
                     Tunnel tunnel;
@@ -85,6 +97,9 @@ namespace GuacamoleSharp.Logic.Connections
                         await tunnel.CloseAsync();
                     }
                 }
+
+                _idle.Reset();
+                _processing.Release();
             }
 
             await Task.CompletedTask;
