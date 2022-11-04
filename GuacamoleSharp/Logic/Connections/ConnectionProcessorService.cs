@@ -35,7 +35,7 @@ namespace GuacamoleSharp.Logic.Connections
             _guacdOptions = guacdOptions.Value;
         }
 
-        public static async Task Add(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource<bool> complete)
+        public static async Task AddAsync(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource<bool> complete)
         {
             await _processing.WaitAsync();
 
