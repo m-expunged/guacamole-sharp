@@ -1,6 +1,6 @@
 # guacamole-sharp
 
-> ⚠️ Previous working version of guacamole-sharp docker image is now avaible under the "1.0.0" tag. The new version "2.1.0" is still being tested.
+> ⚠️ Previous working version of guacamole-sharp docker image is now available under the "1.0.0" tag. The new version "2.1.0" is still being tested.
 
 guacamole-sharp is a C# replacement of the Apache Guacamole server-side Java servlet.
 It is intended for customizable integration of Apache Guacamole into existing frontend projects with their own user and connection management.
