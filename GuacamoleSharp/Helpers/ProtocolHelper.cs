@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Helpers
 {
-    public class ProtocolHelper
+    internal static class ProtocolHelper
     {
         public static string?[] BuildHandshakeReply(Connection connection, string handshake)
         {
@@ -16,6 +16,11 @@ namespace GuacamoleSharp.Helpers
             }
 
             return args;
+        }
+
+        public static string ParseConnectionId(string message)
+        {
+            return new string(message.Reverse().Skip(1).TakeWhile(x => x != '.').Reverse().ToArray());
         }
 
         public static string BuildProtocol(params string?[] args)

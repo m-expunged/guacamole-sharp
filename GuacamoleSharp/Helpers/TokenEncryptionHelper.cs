@@ -3,7 +3,7 @@ using System.Text;
 
 namespace GuacamoleSharp.Helpers
 {
-    public static class TokenEncryptionHelper
+    internal static class TokenEncryptionHelper
     {
         public static string DecryptString(string password, string cipherText)
         {

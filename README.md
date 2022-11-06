@@ -1,11 +1,13 @@
 # guacamole-sharp
 
-> ⚠️ Previous working version of guacamole-sharp docker image is now available under the "1.0.0" tag. The new version "2.1.0" is still being tested.
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/manuelexpunged/guacamolesharp)
+
+> ⚠️ Deprecated previous version of guacamole-sharp docker image is now avaible under the "1.0.0" tag and "1.0.0" branch of the repository.
 
 guacamole-sharp is a C# replacement of the Apache Guacamole server-side Java servlet.
 It is intended for customizable integration of Apache Guacamole into existing frontend projects with their own user and connection management.
 
-Like the official Java guacamole-client **guacamole-common**, guacamole-sharp makes use of the guacamole-protocol and is intended to be used with **guacamole-common-js** (frontend client) and **guacd** (server-side proxy) by Apache. Check out the [Apache Guacamole Docs](https://guacamole.apache.org/doc/gug/) for detailed information.
+Like the official Java guacamole-client **guacamole-common**, guacamole-sharp makes use of the guacamole-protocol and is intended to be used with **guacamole-common-js** (frontend client) and **guacd** (server-side proxy) by Apache. Check out the [Apache Guacamole Docs](https://guacamole.apache.org/doc/gug/) for detailed information. Definitely skim over the developer section of the docs at least once so you know what you are dealing with!
 
 Inspired by Vadim Pronin's [guacamole-lite](https://github.com/vadimpronin/guacamole-lite).
 
@@ -96,6 +98,7 @@ Connection object example:
   "arguments": {
     "hostname": "127.0.0.1",
     "port": "3389",
+    "domain": "mycooldomain",
     "username": "user",
     "password": "password",
     "security": "any",
@@ -112,7 +115,9 @@ The request requires two things:
 
 The token encryption password is defined while creating the Docker container through the environment variables (alternatively inside the appsettings.json if you are building your own image).
 
-The connection object contains all parameters guacd needs to create a connection. **Type** decides the type of connection (ssh, vnc, rdp, ...) and **arguments** is used to configure the connection and pass username and password of the machine you want to connect to. [The Apache Guacamole documentation](https://guacamole.incubator.apache.org/doc/gug/configuring-guacamole.html#connection-configuration) contains a full list of arguments and their meaning.
+The connection object contains all parameters guacd needs to create a connection.
+
+**Type** decides the type of connection (ssh, vnc, rdp, ...) and **arguments** is used to configure the connection and pass username and password of the machine you want to connect to. [The Apache Guacamole documentation](https://guacamole.incubator.apache.org/doc/gug/configuring-guacamole.html#connection-configuration) contains a full list of arguments and their meaning.
 
 ### guacamole-common-js
 
@@ -230,7 +235,7 @@ client.connect(connectionString);
 Some arguments have fallback values and can be left empty in appsettings.json/Dockerfile:
 
 ```c#
-Guacd:Hostname = "127.0.0.1"
+Guacd:Hostname = "localhost"
 Guacd:Port = 4822
 ```
 

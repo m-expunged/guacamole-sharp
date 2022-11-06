@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Logic.Connections
 {
-    public class PendingConnection
+    internal sealed class PendingConnection
     {
         public PendingConnection()
         {

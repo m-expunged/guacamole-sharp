@@ -1,5 +1,6 @@
 ﻿using GuacamoleSharp.Helpers;
 using GuacamoleSharp.Models;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Net;
 using System.Net.Sockets;
@@ -7,13 +8,15 @@ using System.Text;
 
 namespace GuacamoleSharp.Logic.Sockets
 {
-    public class GuacdSocket
+    internal sealed class GuacdSocket
     {
-        protected readonly ArraySegment<byte> _buffer;
-        protected readonly Guid _id;
-        protected readonly StringBuilder _overflowBuffer;
+        private readonly ArraySegment<byte> _buffer;
+        private readonly Guid _id;
+        private readonly StringBuilder _overflowBuffer;
         private readonly IPEndPoint _endpoint;
+        private readonly CancellationTokenSource _cts;
         private Socket _socket = null!;
+        private string? _internalId; // Implement joining existing connections?
 
         public GuacdSocket(Guid id, IPEndPoint endpoint)
         {
@@ -21,14 +24,22 @@ namespace GuacamoleSharp.Logic.Sockets
             _buffer = new ArraySegment<byte>(new byte[1024]);
             _overflowBuffer = new StringBuilder();
             _id = id;
+            _cts = new CancellationTokenSource();
         }
 
         public bool Close()
         {
             try
             {
-                _socket.Shutdown(SocketShutdown.Both);
-                _socket.Close();
+                try
+                {
+                    _cts.Cancel();
+                    _socket.Shutdown(SocketShutdown.Both);
+                }
+                finally
+                {
+                    _socket.Close();
+                }
 
                 Log.Information("[{Id}] Guacd proxy socket closed.", _id);
 
@@ -48,7 +59,7 @@ namespace GuacamoleSharp.Logic.Sockets
             }
         }
 
-        public async Task OpenConnectionAsync(Connection connection)
+        public async Task<string> OpenConnectionAsync(Connection connection)
         {
             Log.Information("[{Id}] Attempting connection to guacd proxy at: {Hostname}:{Port}", _id, _endpoint.Address, _endpoint.Port);
 
@@ -68,6 +79,21 @@ namespace GuacamoleSharp.Logic.Sockets
             var reply = ProtocolHelper.BuildHandshakeReply(connection, request);
 
             await SendAsync(ProtocolHelper.BuildProtocol(reply));
+
+            var ready = await ReceiveAsync();
+            if (ready.Contains("5.ready"))
+            {
+                _internalId = ProtocolHelper.ParseConnectionId(ready);
+                Log.Debug("[{Id}] Guacd proxy connection id: {GuacdId}", _id, _internalId);
+            }
+            else
+            {
+                Log.Debug("[{Id}] Could not set guacd connection id.", _id);
+            }
+
+            Log.Information("[{Id}] Handshake success. Connection ready.", _id);
+
+            return ready;
         }
 
         public async Task<string> ReceiveAsync()
@@ -77,7 +103,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
             do
             {
-                var received = await _socket.ReceiveAsync(_buffer, SocketFlags.None);
+                var received = await _socket.ReceiveAsync(_buffer, SocketFlags.None, _cts.Token);
 
                 if (received > 0)
                 {
@@ -104,7 +130,7 @@ namespace GuacamoleSharp.Logic.Sockets
             Log.Debug("[{Id}] >>>C2G> {Message}", _id, message);
 
             var data = Encoding.UTF8.GetBytes(message);
-            await _socket.SendAsync(data, SocketFlags.None);
+            await _socket.SendAsync(data, SocketFlags.None, _cts.Token);
         }
     }
 }

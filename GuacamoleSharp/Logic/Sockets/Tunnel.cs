@@ -2,7 +2,7 @@
 
 namespace GuacamoleSharp.Logic.Sockets
 {
-    public class Tunnel
+    internal sealed class Tunnel
     {
         private readonly ClientSocket _client;
         private readonly TaskCompletionSource<bool> _complete;
@@ -31,7 +31,8 @@ namespace GuacamoleSharp.Logic.Sockets
 
         public async Task OpenAsync()
         {
-            await _guacd.OpenConnectionAsync(_connection);
+            var ready = await _guacd.OpenConnectionAsync(_connection);
+            await _client.SendAsync(ready);
 
             var ct = _cts.Token;
 
@@ -49,7 +50,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
                     await _guacd.SendAsync(message);
                 }
-            }, ct);
+            });
 
             _ = Task.Run(async () =>
             {
@@ -65,7 +66,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
                     await _client.SendAsync(message);
                 }
-            }, ct);
+            });
         }
     }
 }
