@@ -1,23 +1,36 @@
 ﻿using GuacamoleSharp.Models;
+using Serilog;
 
 namespace GuacamoleSharp.Logic.Sockets
 {
     internal sealed class Tunnel
     {
+        #region Private Fields
+
         private readonly ClientSocket _client;
         private readonly TaskCompletionSource<bool> _complete;
         private readonly Connection _connection;
         private readonly CancellationTokenSource _cts;
         private readonly GuacdSocket _guacd;
+        private readonly Guid _id;
 
-        public Tunnel(Connection connection, ClientSocket client, GuacdSocket guacd, TaskCompletionSource<bool> complete)
+        #endregion Private Fields
+
+        #region Public Constructors
+
+        public Tunnel(Guid id, Connection connection, ClientSocket client, GuacdSocket guacd, TaskCompletionSource<bool> complete)
         {
+            _id = id;
             _connection = connection;
             _client = client;
             _guacd = guacd;
             _complete = complete;
             _cts = new CancellationTokenSource();
         }
+
+        #endregion Public Constructors
+
+        #region Public Methods
 
         public async Task CloseAsync()
         {
@@ -50,7 +63,8 @@ namespace GuacamoleSharp.Logic.Sockets
 
                     await _guacd.SendAsync(message);
                 }
-            });
+            }).ContinueWith(t => HandleError(t), CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+
 
             _ = Task.Run(async () =>
             {
@@ -66,7 +80,15 @@ namespace GuacamoleSharp.Logic.Sockets
 
                     await _client.SendAsync(message);
                 }
-            });
+            }).ContinueWith(t => HandleError(t), CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+        }
+
+        #endregion Public Methods
+
+        private async Task HandleError(Task t)
+        {
+            Log.Error("[{Id}] Socket faulted unexpectedly: {Message}", _id, t.Exception?.Message);
+            await CloseAsync();
         }
     }
 }
