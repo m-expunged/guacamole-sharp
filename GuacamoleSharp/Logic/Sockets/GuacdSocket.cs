@@ -99,7 +99,6 @@ namespace GuacamoleSharp.Logic.Sockets
         public async Task<string> ReceiveAsync()
         {
             var done = false;
-            (string content, int index) message;
 
             do
             {
@@ -107,22 +106,24 @@ namespace GuacamoleSharp.Logic.Sockets
 
                 if (received > 0)
                 {
-                    _overflowBuffer.Append(Encoding.UTF8.GetString(_buffer[0..received]));
-                }
+                    var message = Encoding.UTF8.GetString(_buffer[0..received]);
 
-                var reponse = _overflowBuffer.ToString();
-                message = ProtocolHelper.ReadProtocolUntilLastDelimiter(reponse);
+                    _overflowBuffer.Append(message);
 
-                if (message.content != string.Empty)
-                {
-                    done = true;
-                }
+                    if (message.Contains(';'))
+                    {
+                        done = true;
+                    }
+                }          
             }
             while (!done);
 
-            _overflowBuffer.Remove(0, message.index);
+            var reponse = _overflowBuffer.ToString();
+            var (content, index) = ProtocolHelper.ReadProtocolUntilLastDelimiter(reponse);
 
-            return message.content;
+            _overflowBuffer.Remove(0, index);
+
+            return content;
         }
 
         public async Task SendAsync(string message)
