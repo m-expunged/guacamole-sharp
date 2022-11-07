@@ -7,17 +7,11 @@ namespace GuacamoleSharp.Logic.Sockets
 {
     internal sealed class ClientSocket
     {
-        #region Private Fields
-
         private readonly ArraySegment<byte> _buffer;
         private readonly CancellationTokenSource _cts;
         private readonly Guid _id;
         private readonly StringBuilder _overflowBuffer;
         private readonly WebSocket _socket;
-
-        #endregion Private Fields
-
-        #region Public Constructors
 
         public ClientSocket(Guid id, WebSocket socket)
         {
@@ -27,10 +21,6 @@ namespace GuacamoleSharp.Logic.Sockets
             _overflowBuffer = new StringBuilder();
             _id = id;
         }
-
-        #endregion Public Constructors
-
-        #region Public Methods
 
         public async Task<bool> CloseAsync()
         {
@@ -93,7 +83,5 @@ namespace GuacamoleSharp.Logic.Sockets
             var data = Encoding.UTF8.GetBytes(message);
             await _socket.SendAsync(new ArraySegment<byte>(data, 0, data.Length), WebSocketMessageType.Text, true, _cts.Token);
         }
-
-        #endregion Public Methods
     }
 }

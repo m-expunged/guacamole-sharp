@@ -14,18 +14,12 @@ namespace GuacamoleSharp.Logic.Connections
 {
     internal sealed class ConnectionProcessorService : BackgroundService
     {
-        #region Private Fields
-
         private static readonly ManualResetEvent _idle;
         private static readonly ConcurrentQueue<PendingConnection> _pendingConnections;
         private static readonly SemaphoreSlim _processing;
         private readonly ClientOptions _clientOptions;
         private readonly GuacamoleSharpOptions _guacamoleSharpOptions;
         private readonly GuacdOptions _guacdOptions;
-
-        #endregion Private Fields
-
-        #region Public Constructors
 
         static ConnectionProcessorService()
         {
@@ -40,10 +34,6 @@ namespace GuacamoleSharp.Logic.Connections
             _guacamoleSharpOptions = guacamoleSharpOptions.Value;
             _guacdOptions = guacdOptions.Value;
         }
-
-        #endregion Public Constructors
-
-        #region Public Methods
 
         public static async Task AddAsync(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource<bool> complete)
         {
@@ -64,10 +54,6 @@ namespace GuacamoleSharp.Logic.Connections
         {
             return base.StopAsync(stoppingToken);
         }
-
-        #endregion Public Methods
-
-        #region Protected Methods
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -118,10 +104,6 @@ namespace GuacamoleSharp.Logic.Connections
 
             await Task.CompletedTask;
         }
-
-        #endregion Protected Methods
-
-        #region Private Methods
 
         private Connection GetConnectionConfiguration(PendingConnection pendingConnection)
         {
@@ -180,7 +162,5 @@ namespace GuacamoleSharp.Logic.Connections
                 throw new Exception($"Failed to configure endpoint: {ex.Message}");
             }
         }
-
-        #endregion Private Methods
     }
 }

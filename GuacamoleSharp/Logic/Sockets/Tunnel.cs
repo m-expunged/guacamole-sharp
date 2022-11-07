@@ -5,18 +5,12 @@ namespace GuacamoleSharp.Logic.Sockets
 {
     internal sealed class Tunnel
     {
-        #region Private Fields
-
         private readonly ClientSocket _client;
         private readonly TaskCompletionSource<bool> _complete;
         private readonly Connection _connection;
         private readonly CancellationTokenSource _cts;
         private readonly GuacdSocket _guacd;
         private readonly Guid _id;
-
-        #endregion Private Fields
-
-        #region Public Constructors
 
         public Tunnel(Guid id, Connection connection, ClientSocket client, GuacdSocket guacd, TaskCompletionSource<bool> complete)
         {
@@ -27,10 +21,6 @@ namespace GuacamoleSharp.Logic.Sockets
             _complete = complete;
             _cts = new CancellationTokenSource();
         }
-
-        #endregion Public Constructors
-
-        #region Public Methods
 
         public async Task CloseAsync()
         {
@@ -82,8 +72,6 @@ namespace GuacamoleSharp.Logic.Sockets
                 }
             }).ContinueWith(t => HandleError(t), CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
         }
-
-        #endregion Public Methods
 
         private async Task HandleError(Task t)
         {
