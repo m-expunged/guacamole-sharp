@@ -123,6 +123,8 @@ The connection object contains all parameters guacd needs to create a connection
 
 In order to use guacamole-sharp, you will need to use the guacamole-common-js library in your frontend. You can find a detailed explanation in the Apache Guacamole Docs.
 
+Also, check you the [Apache Guacamole-Website](https://github.com/apache/guacamole-website/blob/master/doc/0.9.14/guacamole-common-js/Client.js.html) client implementation on GitHub for some examples of more complex usecases of guacamole-common-js (e.g. clipboard).
+
 A good way to get started is to look at the Angular example that is included in the repository, using the guacamole-common-js npm package. You might need to create a d.ts file if you are using Typescript in your project.
 
 > ⚠️ Resolution of VNC connections must be handled client side since the VNC protocol does not define any mechanism for the connecting client to indicate the desired screen size.
