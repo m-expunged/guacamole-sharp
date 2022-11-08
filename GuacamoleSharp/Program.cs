@@ -1,3 +1,4 @@
+using GuacamoleSharp;
 using GuacamoleSharp.Helpers;
 using GuacamoleSharp.Logic.Connections;
 using GuacamoleSharp.Models;
@@ -18,7 +19,7 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog((ctx, lc) => lc
-        .MinimumLevel.Information()
+        .MinimumLevel.ControlledBy(new EnvironmentLoggingLevelSwitch("%LOG_LEVEL%"))
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
         .Enrich.FromLogContext()
@@ -55,12 +56,6 @@ try
             Log.Error("Error while generating connection token: {Message}", ex.Message);
             return Results.BadRequest();
         }
-    });
-
-    app.MapPost("/shutdown", ([FromServices] IHostApplicationLifetime lifetime) =>
-    {
-        lifetime.StopApplication();
-        return Results.Ok();
     });
 
     app.Use(async (ctx, next) =>

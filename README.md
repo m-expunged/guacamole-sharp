@@ -43,6 +43,7 @@ docker run --name guacd
 ```bash
 docker run --name guacamolesharp
 --link guacd:guacd
+-e LOG_LEVEL=Information
 -e GuacamoleSharp:Password=YourTokenEncryptionPasswordHere
 -e Guacd:Hostname=guacd
 -e Guacd:Port=4822
@@ -51,6 +52,43 @@ docker run --name guacamolesharp
 ```
 
 With the configuration above, the guacamole-sharp container will listen for API/WebSocket connections on port 80.
+
+Logging level can be controlled with the "LOG_LEVEL" environment variable. The default level is "Information", anything below that should not be used in production since sensitive information is exposed in the logs.
+
+Accepted log levels:
+
+```c#
+//
+// Summary:
+//     Specifies the meaning and relative importance of a log event.
+public enum LogEventLevel
+{
+    //
+    // Summary:
+    //     Anything and everything you might want to know about a running block of code.
+    Verbose,
+    //
+    // Summary:
+    //     Internal system events that aren't necessarily observable from the outside.
+    Debug,
+    //
+    // Summary:
+    //     The lifeblood of operational intelligence - things happen.
+    Information,
+    //
+    // Summary:
+    //     Service is degraded or endangered.
+    Warning,
+    //
+    // Summary:
+    //     Functionality is unavailable, invariants are broken or data is lost.
+    Error,
+    //
+    // Summary:
+    //     If you have a pager, it goes off when one of these occurs.
+    Fatal
+}
+```
 
 A docker compose example is included in the repository.
 

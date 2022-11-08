@@ -52,7 +52,7 @@ namespace GuacamoleSharp.Logic.Connections
                     Complete = complete
                 });
 
-                // signal that sockets need processing
+                // signal wake up
                 _idle.Set();
             }
             finally
@@ -66,7 +66,7 @@ namespace GuacamoleSharp.Logic.Connections
         {            
             // signal shutdown
             _shutdownTokenSource.Cancel();
-            // wake up processing loop from idle state to allow shutdown
+            // signal wake up to allow shutdown
             _idle.Set();
 
             await Task.Delay(5000, CancellationToken.None);
@@ -80,7 +80,7 @@ namespace GuacamoleSharp.Logic.Connections
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                // wait until sockets need processing to prevent cpu spam
+                // idle until sockets need processing to prevent cpu spam
                 _idle.WaitOne();
                 // wait until sockets have been added for processing
                 await _processing.WaitAsync(_shutdownTokenSource.Token);

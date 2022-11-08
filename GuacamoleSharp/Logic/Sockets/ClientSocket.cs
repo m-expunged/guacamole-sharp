@@ -38,7 +38,7 @@ namespace GuacamoleSharp.Logic.Sockets
             }
             catch (Exception ex)
             {
-                Log.Error("[{Id}] Error while closing client socket: {ex}", _id, ex);
+                Log.Error("[{Id}] Error while closing client socket: {Message}", _id, ex.Message);
             }
         }
 
