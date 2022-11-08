@@ -4,6 +4,7 @@ using GuacamoleSharp.Models;
 using GuacamoleSharp.Options;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using Serilog.Events;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
@@ -18,6 +19,8 @@ try
 
     builder.Host.UseSerilog((ctx, lc) => lc
         .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: outputTemplate));
 
@@ -54,6 +57,12 @@ try
         }
     });
 
+    app.MapPost("/shutdown", ([FromServices] IHostApplicationLifetime lifetime) =>
+    {
+        lifetime.StopApplication();
+        return Results.Ok();
+    });
+
     app.Use(async (ctx, next) =>
     {
         if (ctx.Request.Path == "/connect")
@@ -66,7 +75,7 @@ try
                     .Where(x => !string.IsNullOrWhiteSpace(x.Key) && !string.IsNullOrWhiteSpace(x.Value))
                     .ToDictionary(x => x.Key, x => x.Value[0].ToString());
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 _ = ConnectionProcessorService.AddAsync(socket, connectionArgs, complete);
 

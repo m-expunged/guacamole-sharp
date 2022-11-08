@@ -4,6 +4,7 @@ using GuacamoleSharp.Models;
 using GuacamoleSharp.Options;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -17,6 +18,7 @@ namespace GuacamoleSharp.Logic.Connections
         private static readonly ManualResetEvent _idle;
         private static readonly ConcurrentQueue<PendingConnection> _pendingConnections;
         private static readonly SemaphoreSlim _processing;
+        private static readonly CancellationTokenSource _shutdownTokenSource;
         private readonly ClientOptions _clientOptions;
         private readonly GuacamoleSharpOptions _guacamoleSharpOptions;
         private readonly GuacdOptions _guacdOptions;
@@ -26,6 +28,7 @@ namespace GuacamoleSharp.Logic.Connections
             _pendingConnections = new ConcurrentQueue<PendingConnection>();
             _idle = new ManualResetEvent(false);
             _processing = new SemaphoreSlim(1, 1);
+            _shutdownTokenSource = new CancellationTokenSource();
         }
 
         public ConnectionProcessorService(IOptions<ClientOptions> clientOptions, IOptions<GuacamoleSharpOptions> guacamoleSharpOptions, IOptions<GuacdOptions> guacdOptions)
@@ -35,24 +38,40 @@ namespace GuacamoleSharp.Logic.Connections
             _guacdOptions = guacdOptions.Value;
         }
 
-        public static async Task AddAsync(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource<bool> complete)
+        public static async Task AddAsync(WebSocket socket, Dictionary<string, string> arguments, TaskCompletionSource complete)
         {
-            await _processing.WaitAsync();
+            // wait until previous sockets have finished processing
+            await _processing.WaitAsync(_shutdownTokenSource.Token);
 
-            _pendingConnections.Enqueue(new PendingConnection
+            try
             {
-                Socket = socket,
-                Arguments = arguments,
-                Complete = complete
-            });
+                _pendingConnections.Enqueue(new PendingConnection
+                {
+                    Socket = socket,
+                    Arguments = arguments,
+                    Complete = complete
+                });
 
-            _idle.Set();
-            _processing.Release();
+                // signal that sockets need processing
+                _idle.Set();
+            }
+            finally
+            {
+                // sockets added, allow processing or adding of more sockets
+                _processing.Release();
+            }
         }
 
-        public override Task StopAsync(CancellationToken stoppingToken)
-        {
-            return base.StopAsync(stoppingToken);
+        public override async Task StopAsync(CancellationToken stoppingToken)
+        {            
+            // signal shutdown
+            _shutdownTokenSource.Cancel();
+            // wake up processing loop from idle state to allow shutdown
+            _idle.Set();
+
+            await Task.Delay(5000, CancellationToken.None);
+
+            await base.StopAsync(stoppingToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -61,45 +80,46 @@ namespace GuacamoleSharp.Logic.Connections
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                // wait until sockets need processing to prevent cpu spam
                 _idle.WaitOne();
-                await _processing.WaitAsync(stoppingToken);
+                // wait until sockets have been added for processing
+                await _processing.WaitAsync(_shutdownTokenSource.Token);
 
-                while (_pendingConnections.TryDequeue(out var pendingConnection))
+                try
                 {
-                    Tunnel tunnel;
+                    while (_pendingConnections.TryDequeue(out var pendingConnection))
+                    {
+                        Connection connection;
+                        IPEndPoint endpoint;
 
-                    try
-                    {
-                        var connection = GetConnectionConfiguration(pendingConnection);
-                        var endpoint = GetProxyEndPoint();
-                        var client = new ClientSocket(pendingConnection.Id, pendingConnection.Socket);
-                        var guacd = new GuacdSocket(pendingConnection.Id, endpoint);
+                        try
+                        {
+                            connection = GetConnectionConfiguration(pendingConnection);
+                            endpoint = GetProxyEndPoint();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("[{Id}] {Message}.", pendingConnection.Id, ex.Message);
+                            Log.Information("[{Id}] Closing connection...", pendingConnection.Id);
+                            await pendingConnection.Socket.CloseAsync(WebSocketCloseStatus.InternalServerError, string.Empty, CancellationToken.None);
+                            pendingConnection.Complete.TrySetResult();
+                            continue;
+                        }
 
-                        tunnel = new Tunnel(pendingConnection.Id, connection, client, guacd, pendingConnection.Complete);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("[{Id}] {Message}.", pendingConnection.Id, ex.Message);
-                        Log.Information("[{Id}] Closing connection...", pendingConnection.Id);
-                        await pendingConnection.Socket.CloseAsync(WebSocketCloseStatus.InternalServerError, string.Empty, CancellationToken.None);
-                        pendingConnection.Complete.TrySetResult(false);
-                        continue;
+                        var client = new ClientSocket(pendingConnection.Id, pendingConnection.Socket, _shutdownTokenSource.Token);
+                        var guacd = new GuacdSocket(pendingConnection.Id, endpoint, _shutdownTokenSource.Token);
+                        var tunnel = new Tunnel(pendingConnection.Id, connection, client, guacd, pendingConnection.Complete, _shutdownTokenSource.Token); ;
+                        await tunnel.OpenAsync();                   
                     }
 
-                    try
-                    {
-                        await tunnel.OpenAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("[{Id}] {Message}.", pendingConnection.Id, ex.Message);
-                        Log.Information("[{Id}] Closing connection...", pendingConnection.Id);
-                        await tunnel.CloseAsync();
-                    }
+                    // processing finished, enter idle state
+                    _idle.Reset();
                 }
-
-                _idle.Reset();
-                _processing.Release();
+                finally
+                {
+                    // processing finished, allow new sockets to be added
+                    _processing.Release();
+                }
             }
 
             await Task.CompletedTask;

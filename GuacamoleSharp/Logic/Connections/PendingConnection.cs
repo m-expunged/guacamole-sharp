@@ -11,7 +11,7 @@ namespace GuacamoleSharp.Logic.Connections
 
         public Dictionary<string, string> Arguments { get; set; } = null!;
 
-        public TaskCompletionSource<bool> Complete { get; set; } = null!;
+        public TaskCompletionSource Complete { get; set; } = null!;
 
         public Guid Id { get; }
 

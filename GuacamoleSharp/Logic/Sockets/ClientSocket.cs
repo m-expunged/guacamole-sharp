@@ -8,46 +8,37 @@ namespace GuacamoleSharp.Logic.Sockets
     internal sealed class ClientSocket
     {
         private readonly ArraySegment<byte> _buffer;
-        private readonly CancellationTokenSource _cts;
         private readonly Guid _id;
         private readonly StringBuilder _overflowBuffer;
         private readonly WebSocket _socket;
+        private readonly CancellationToken _shutdownToken;
 
-        public ClientSocket(Guid id, WebSocket socket)
+        public ClientSocket(Guid id, WebSocket socket, CancellationToken shutdownToken)
         {
+            _id = id;
             _socket = socket;
-            _cts = new CancellationTokenSource();
+            _shutdownToken = shutdownToken;
             _buffer = new ArraySegment<byte>(new byte[1024]);
             _overflowBuffer = new StringBuilder();
-            _id = id;
         }
 
-        public async Task<bool> CloseAsync()
+        public async Task CloseAsync()
         {
             try
             {
-                _cts.Cancel();
-
                 if (_socket.State == WebSocketState.Open)
                 {
                     await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, String.Empty, CancellationToken.None);
+                    Log.Information("[{Id}] Client socket closed.", _id);
                 }
-
-                Log.Information("[{Id}] Client socket closed.", _id);
-
-                return true;
             }
             catch (ObjectDisposedException)
             {
                 Log.Warning("[{Id}] Client socket is already disposed.", _id);
-
-                return true;
             }
             catch (Exception ex)
             {
                 Log.Error("[{Id}] Error while closing client socket: {ex}", _id, ex);
-
-                return false;
             }
         }
 
@@ -57,7 +48,7 @@ namespace GuacamoleSharp.Logic.Sockets
 
             do
             {
-                result = await _socket.ReceiveAsync(_buffer, _cts.Token);
+                result = await _socket.ReceiveAsync(_buffer, _shutdownToken);
                 if (result.Count > 0)
                 {
                     _overflowBuffer.Append(Encoding.UTF8.GetString(_buffer[0..result.Count]));
@@ -81,7 +72,7 @@ namespace GuacamoleSharp.Logic.Sockets
             Log.Debug("[{Id}] >>>G2C> {Message}", _id, message);
 
             var data = Encoding.UTF8.GetBytes(message);
-            await _socket.SendAsync(new ArraySegment<byte>(data, 0, data.Length), WebSocketMessageType.Text, true, _cts.Token);
+            await _socket.SendAsync(new ArraySegment<byte>(data, 0, data.Length), WebSocketMessageType.Text, true, _shutdownToken);
         }
     }
 }
