@@ -282,4 +282,7 @@ Guacd:Port = 4822
 If a guacamole-protocol argument is defined multiple times, it will be overwritten by the argument with the highest priority.
 The order of priority is as follows (from highest to lowest):
 
-Unencrypted values > Token string values > Default values > Fallback values
+- Unencrypted values (request query params)
+- Token string values (request)
+- Default values (appsettings.json)
+- Fallback values (default class property values)
